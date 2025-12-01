@@ -18,12 +18,6 @@ Java 17 + Swing + MySQL mimarisiyle otel rezervasyon ve müşteri takip sistemi.
 - `src/main/resources/schema.sql` dosyasını MySQL’e uygulayın.
 - `database/DatabaseConnection` içindeki URL/kullanıcı/şifreyi kendi ortamınıza göre değiştirin.
 
-### Çalıştırma
-```bash
-mvn -DskipTests compile
-mvn -DskipTests exec:java -Dexec.mainClass=ui.App
-```
-
 ### Ekranlar
 - **LoginForm**: Müşteri/Personel girişi, müşteri kaydı açma
 - **CustomerPanel**: Profil güncelleme, oda arama/rezerve, rezervasyon iptal, bildirim listesi
