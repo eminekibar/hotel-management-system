@@ -38,3 +38,4 @@ observer\NotificationService.class
 ui\StaffPanel.class
 dao\NotificationDAO.class
 strategy\PricingStrategy.class
+util\HashUtil.class

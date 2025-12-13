@@ -58,16 +58,22 @@ public class CustomerRegistrationDialog extends JDialog {
     }
 
     private void submit() {
-        Customer customer = customerService.register(
-                usernameField.getText().trim(),
-                firstNameField.getText().trim(),
-                lastNameField.getText().trim(),
-                emailField.getText().trim(),
-                phoneField.getText().trim(),
-                nationalIdField.getText().trim(),
-                new String(passwordField.getPassword())
-        );
-        JOptionPane.showMessageDialog(this, "Account created for " + customer.getDisplayName());
-        dispose();
+        try {
+            Customer customer = customerService.register(
+                    usernameField.getText().trim(),
+                    firstNameField.getText().trim(),
+                    lastNameField.getText().trim(),
+                    emailField.getText().trim(),
+                    phoneField.getText().trim(),
+                    nationalIdField.getText().trim(),
+                    new String(passwordField.getPassword()).trim()
+            );
+            JOptionPane.showMessageDialog(this, "Account created for " + customer.getDisplayName());
+            dispose();
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Validation error", JOptionPane.WARNING_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Failed to create account: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }

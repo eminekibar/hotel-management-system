@@ -66,6 +66,11 @@ public class LoginForm extends JFrame {
         String password = new String(passwordField.getPassword());
         String userType = (String) userTypeBox.getSelectedItem();
 
+        if (identifier.isBlank() || password.isBlank()) {
+            JOptionPane.showMessageDialog(this, "Identifier and password are required");
+            return;
+        }
+
         if ("Customer".equals(userType)) {
             Customer customer = authService.loginCustomer(identifier, password);
             if (customer != null) {

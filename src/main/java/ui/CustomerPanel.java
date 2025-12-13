@@ -215,13 +215,15 @@ public class CustomerPanel extends JFrame {
 
     private void updatePassword() {
         String newPassword = new String(newPasswordField.getPassword()).trim();
-        if (newPassword.isBlank()) {
-            JOptionPane.showMessageDialog(this, "Password cannot be empty");
-            return;
+        try {
+            customerService.changePassword(customer.getId(), newPassword);
+            newPasswordField.setText("");
+            JOptionPane.showMessageDialog(this, "Password updated");
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Validation error", JOptionPane.WARNING_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Failed to update password: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
-        customerService.changePassword(customer.getId(), newPassword);
-        newPasswordField.setText("");
-        JOptionPane.showMessageDialog(this, "Password updated");
     }
 
     private void logout() {

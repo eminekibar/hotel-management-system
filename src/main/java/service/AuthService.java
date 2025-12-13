@@ -4,6 +4,7 @@ import dao.CustomerDAO;
 import dao.StaffDAO;
 import model.user.Customer;
 import model.user.Staff;
+import util.HashUtil;
 
 public class AuthService {
 
@@ -15,17 +16,17 @@ public class AuthService {
         this.staffDAO = new StaffDAO();
     }
 
-    public Customer loginCustomer(String identifier, String passwordHash) {
+    public Customer loginCustomer(String identifier, String rawPassword) {
         Customer customer = customerDAO.findByIdentifier(identifier);
-        if (customer != null && passwordHash.equals(customer.getPasswordHash())) {
+        if (customer != null && HashUtil.isPasswordMatch(rawPassword, customer.getPasswordHash())) {
             return customer;
         }
         return null;
     }
 
-    public Staff loginStaff(String identifier, String passwordHash) {
+    public Staff loginStaff(String identifier, String rawPassword) {
         Staff staff = staffDAO.findByIdentifier(identifier);
-        if (staff != null && passwordHash.equals(staff.getPasswordHash())) {
+        if (staff != null && HashUtil.isPasswordMatch(rawPassword, staff.getPasswordHash())) {
             return staff;
         }
         return null;

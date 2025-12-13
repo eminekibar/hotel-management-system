@@ -65,8 +65,8 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 INSERT INTO staff (username, first_name, last_name, email, national_id, password_hash, role) VALUES
-('admin', 'Staff', 'Admin', 'staff@mail.com', '90000000001', 'staff123', 'admin'),
-('staff2', 'Staff', 'Two', 'staff2@mail.com', '90000000002', 'staff2pass', 'reception');
+('admin', 'Staff', 'Admin', 'staff@mail.com', '90000000001', '10176e7b7b24d317acfcf8d2064cfd2f24e154f7b5a96603077d5ef813d6a6b6', 'admin'),
+('staff2', 'Staff', 'Two', 'staff2@mail.com', '90000000002', 'e6c2627cb811ddcf2824dec6c9fdb842d2b48739f53801a018ce80cbbef09086', 'reception');
 
 INSERT INTO rooms (room_number, room_type, capacity, price_per_night, status) VALUES
 ('101', 'standard', 1, 75.00, 'available'),
@@ -74,6 +74,6 @@ INSERT INTO rooms (room_number, room_type, capacity, price_per_night, status) VA
 ('303', 'suite', 4, 250.00, 'maintenance');
 
 INSERT INTO customers (username, first_name, last_name, email, phone, national_id, password_hash, is_active) VALUES
-('ayse', 'Ayse', 'Yilmaz', 'ayse.yilmaz@mail.com', '+90-530-111-1111', '10000000001', 'pass123', TRUE),
-('mehmet', 'Mehmet', 'Demir', 'mehmet.demir@mail.com', '+90-532-222-2222', '10000000002', 'pass123', TRUE),
-('elif', 'Elif', 'Kaya', 'elif.kaya@mail.com', '+90-534-333-3333', '10000000003', 'pass123', TRUE);
+('ayse', 'Ayse', 'Yilmaz', 'ayse.yilmaz@mail.com', '+90-530-111-1111', '10000000001', '9b8769a4a742959a2d0298c36fb70623f2dfacda8436237df08d8dfd5b37374c', TRUE),
+('mehmet', 'Mehmet', 'Demir', 'mehmet.demir@mail.com', '+90-532-222-2222', '10000000002', '9b8769a4a742959a2d0298c36fb70623f2dfacda8436237df08d8dfd5b37374c', TRUE),
+('elif', 'Elif', 'Kaya', 'elif.kaya@mail.com', '+90-534-333-3333', '10000000003', '9b8769a4a742959a2d0298c36fb70623f2dfacda8436237df08d8dfd5b37374c', TRUE);

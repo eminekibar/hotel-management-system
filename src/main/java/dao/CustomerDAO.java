@@ -126,6 +126,20 @@ public class CustomerDAO {
         return customers;
     }
 
+    public boolean existsByUsernameOrEmailOrNationalId(String username, String email, String nationalId) {
+        String sql = "SELECT 1 FROM customers WHERE username = ? OR email = ? OR national_id = ? LIMIT 1";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, username);
+            ps.setString(2, email);
+            ps.setString(3, nationalId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to check customer uniqueness", e);
+        }
+    }
+
     public void update(Customer customer) {
         String sql = "UPDATE customers SET username=?, first_name=?, last_name=?, email=?, phone=?, national_id=?, password_hash=?, is_active=? WHERE customer_id=?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
