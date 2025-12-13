@@ -43,7 +43,7 @@ public class StaffPanel extends JFrame {
     private final JComboBox<String> resRoomTypeBox = new JComboBox<>(new String[]{"standard", "suite", "family"});
     private final JSpinner resCapacitySpinner = new JSpinner(new SpinnerNumberModel(2, 1, 6, 1));
     private final DefaultListModel<String> resSearchRoomsModel = new DefaultListModel<>();
-    private List<Room> resSearchRooms;
+    private List<model.room.RoomAvailabilityInfo> resSearchRooms;
 
     public StaffPanel(Staff staff) {
         this.staff = staff;
@@ -130,11 +130,17 @@ public class StaffPanel extends JFrame {
         checkOut.addActionListener(e -> performOnSelected(list.getSelectedIndex(), "checkout"));
         JButton cancel = new JButton("Cancel");
         cancel.addActionListener(e -> performOnSelected(list.getSelectedIndex(), "cancel"));
+        JButton markPaid = new JButton("Mark Paid");
+        markPaid.addActionListener(e -> performOnSelected(list.getSelectedIndex(), "markPaid"));
+        JButton refund = new JButton("Refund");
+        refund.addActionListener(e -> performOnSelected(list.getSelectedIndex(), "refund"));
         JButton refresh = new JButton("Refresh");
         refresh.addActionListener(e -> refreshReservations());
         buttons.add(checkIn);
         buttons.add(checkOut);
         buttons.add(cancel);
+        buttons.add(markPaid);
+        buttons.add(refund);
         buttons.add(refresh);
         panel.add(buttons, BorderLayout.SOUTH);
 
@@ -202,7 +208,8 @@ public class StaffPanel extends JFrame {
             reservationListModel.addElement(
                     res.getReservationId() + " | cust#" + res.getCustomer().getId() + " " + res.getCustomer().getDisplayName() +
                             " | room " + res.getRoom().getRoomNumber() + " (" + res.getRoom().getType() + ")" +
-                            " | " + res.getCurrentState().getName()
+                            " | status: " + res.getCurrentState().getName() +
+                            " | payment: " + res.getPaymentStatus()
             );
         }
     }
@@ -223,15 +230,21 @@ public class StaffPanel extends JFrame {
             return;
         }
         Reservation reservation = cachedReservations.get(index);
-        switch (action) {
-            case "checkin" -> reservationService.checkIn(reservation.getReservationId(), staff.getId());
-            case "checkout" -> reservationService.checkOut(reservation.getReservationId(), staff.getId());
-            case "cancel" -> reservationService.cancelReservation(reservation.getReservationId(), staff.getId());
-            default -> {
+        try {
+            switch (action) {
+                case "checkin" -> reservationService.checkIn(reservation.getReservationId(), staff.getId());
+                case "checkout" -> reservationService.checkOut(reservation.getReservationId(), staff.getId());
+                case "cancel" -> reservationService.cancelReservation(reservation.getReservationId(), staff.getId());
+                case "markPaid" -> reservationService.markPaid(reservation.getReservationId(), staff.getId());
+                case "refund" -> reservationService.refund(reservation.getReservationId(), staff.getId());
+                default -> {
+                }
             }
+            refreshReservations();
+            refreshRooms();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Action failed", JOptionPane.WARNING_MESSAGE);
         }
-        refreshReservations();
-        refreshRooms();
     }
 
     private void searchRoomsForReservation() {
@@ -240,10 +253,11 @@ public class StaffPanel extends JFrame {
             int capacity = (Integer) resCapacitySpinner.getValue();
             LocalDate start = LocalDate.parse(resStartDateField.getText().trim());
             LocalDate end = LocalDate.parse(resEndDateField.getText().trim());
-            resSearchRooms = roomService.search(type, capacity, start, end);
+            resSearchRooms = roomService.searchWithAvailability(type, capacity, start, end);
             resSearchRoomsModel.clear();
-            for (Room room : resSearchRooms) {
-                resSearchRoomsModel.addElement(room.getRoomNumber() + " | " + room.getType() + " | " + room.getCapacity());
+            for (model.room.RoomAvailabilityInfo info : resSearchRooms) {
+                Room room = info.getRoom();
+                resSearchRoomsModel.addElement(room.getRoomNumber() + " | " + room.getType() + " | cap " + room.getCapacity() + " | $" + room.getPricePerNight() + " | " + info.getAvailabilityLabel());
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Invalid room search data: " + e.getMessage());
@@ -262,7 +276,12 @@ public class StaffPanel extends JFrame {
                 JOptionPane.showMessageDialog(this, "Customer not found");
                 return;
             }
-            Room room = resSearchRooms.get(selectedRoomIndex);
+            model.room.RoomAvailabilityInfo info = resSearchRooms.get(selectedRoomIndex);
+            if (!info.isBookable()) {
+                JOptionPane.showMessageDialog(this, "Room is not available for these dates.");
+                return;
+            }
+            Room room = info.getRoom();
             LocalDate start = LocalDate.parse(resStartDateField.getText().trim());
             LocalDate end = LocalDate.parse(resEndDateField.getText().trim());
             Reservation reservation = reservationService.createReservation(customer, room, start, end);

@@ -154,10 +154,19 @@ public class CustomerPanel extends JFrame {
             LocalDate end = LocalDate.parse(endDateField.getText().trim());
             String type = (String) roomTypeBox.getSelectedItem();
             int capacity = (Integer) capacitySpinner.getValue();
-            lastSearchResults = roomService.search(type, capacity, start, end);
+            java.util.List<model.room.RoomAvailabilityInfo> availabilityList = roomService.searchWithAvailability(type, capacity, start, end);
+            lastSearchResults = new java.util.ArrayList<>();
             searchResultsModel.clear();
-            for (Room room : lastSearchResults) {
-                searchResultsModel.addElement(room.getRoomNumber() + " | " + room.getType() + " | capacity " + room.getCapacity() + " | " + room.getPricePerNight());
+            for (int i = 0; i < availabilityList.size(); i++) {
+                var info = availabilityList.get(i);
+                Room room = info.getRoom();
+                lastSearchResults.add(room);
+                searchResultsModel.addElement(
+                        room.getRoomNumber() + " | " + room.getType() +
+                                " | capacity " + room.getCapacity() +
+                                " | $" + room.getPricePerNight() +
+                                " | " + info.getAvailabilityLabel()
+                );
             }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Invalid search input: " + ex.getMessage());

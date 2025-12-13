@@ -10,16 +10,16 @@ public class CanceledState implements ReservationState {
 
     @Override
     public void onCheckIn(Reservation reservation) {
-        // cannot check in
+        throw new IllegalStateException("Reservation is canceled.");
     }
 
     @Override
     public void onCheckOut(Reservation reservation) {
-        // cannot check out
+        throw new IllegalStateException("Reservation is canceled.");
     }
 
     @Override
     public void onCancel(Reservation reservation) {
-        // already canceled
+        throw new IllegalStateException("Reservation is already canceled.");
     }
 }

@@ -27,6 +27,7 @@ C:\Users\HP\hotel-management-system\src\main\java\state\ReservationState.java
 C:\Users\HP\hotel-management-system\src\main\java\model\reservation\Reservation.java
 C:\Users\HP\hotel-management-system\src\main\java\model\user\Staff.java
 C:\Users\HP\hotel-management-system\src\main\java\builder\CustomerBuilder.java
+C:\Users\HP\hotel-management-system\src\main\java\model\room\RoomAvailabilityInfo.java
 C:\Users\HP\hotel-management-system\src\main\java\state\PendingState.java
 C:\Users\HP\hotel-management-system\src\main\java\model\room\SuiteRoom.java
 C:\Users\HP\hotel-management-system\src\main\java\observer\NotificationObserver.java

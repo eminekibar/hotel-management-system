@@ -10,16 +10,16 @@ public class CompletedState implements ReservationState {
 
     @Override
     public void onCheckIn(Reservation reservation) {
-        // no-op, already completed
+        throw new IllegalStateException("Reservation already completed.");
     }
 
     @Override
     public void onCheckOut(Reservation reservation) {
-        // no-op
+        throw new IllegalStateException("Reservation already completed.");
     }
 
     @Override
     public void onCancel(Reservation reservation) {
-        // cannot cancel completed reservation
+        throw new IllegalStateException("Cannot cancel a completed reservation.");
     }
 }

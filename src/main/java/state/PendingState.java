@@ -15,7 +15,7 @@ public class PendingState implements ReservationState {
 
     @Override
     public void onCheckOut(Reservation reservation) {
-        // not allowed
+        throw new IllegalStateException("Cannot check-out before check-in.");
     }
 
     @Override

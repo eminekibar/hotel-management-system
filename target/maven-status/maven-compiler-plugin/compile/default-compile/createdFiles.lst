@@ -6,6 +6,7 @@ service\AuthService.class
 dao\CustomerDAO.class
 observer\StaffNotificationObserver.class
 dao\ReservationDAO.class
+model\room\RoomAvailabilityInfo.class
 state\PendingState.class
 model\room\SuiteRoom.class
 service\ReservationService.class

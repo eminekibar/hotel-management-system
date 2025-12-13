@@ -68,6 +68,23 @@ public class RoomDAO {
         return rooms;
     }
 
+    public List<Room> searchAllByTypeAndCapacity(String type, int capacity) {
+        List<Room> rooms = new ArrayList<>();
+        String sql = "SELECT * FROM rooms WHERE room_type=? AND capacity>=?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, type);
+            ps.setInt(2, capacity);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    rooms.add(mapRow(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to search rooms by type and capacity", e);
+        }
+        return rooms;
+    }
+
     public List<Room> search(String type, int capacity, LocalDate startDate, LocalDate endDate) {
         List<Room> rooms = new ArrayList<>();
         String sql = """

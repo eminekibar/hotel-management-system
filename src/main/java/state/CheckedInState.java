@@ -20,6 +20,6 @@ public class CheckedInState implements ReservationState {
 
     @Override
     public void onCancel(Reservation reservation) {
-        reservation.setState(new CanceledState());
+        throw new IllegalStateException("Cannot cancel after check-in.");
     }
 }

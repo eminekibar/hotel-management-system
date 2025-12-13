@@ -208,4 +208,28 @@ public class ReservationDAO {
             default -> new PendingState();
         };
     }
+
+    public Reservation findFirstOverlapForRoom(int roomId, LocalDate startDate, LocalDate endDate) {
+        String sql = """
+                SELECT * FROM reservations
+                WHERE room_id = ?
+                  AND status NOT IN ('canceled')
+                  AND NOT (end_date <= ? OR start_date >= ?)
+                ORDER BY start_date
+                LIMIT 1
+                """;
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, roomId);
+            ps.setDate(2, Date.valueOf(startDate));
+            ps.setDate(3, Date.valueOf(endDate));
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapRow(rs);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to check room availability overlap", e);
+        }
+        return null;
+    }
 }

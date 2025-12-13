@@ -15,7 +15,7 @@ public class ActiveState implements ReservationState {
 
     @Override
     public void onCheckOut(Reservation reservation) {
-        // cannot checkout before check-in
+        throw new IllegalStateException("Cannot check-out before check-in.");
     }
 
     @Override
