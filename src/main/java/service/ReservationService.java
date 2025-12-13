@@ -63,16 +63,22 @@ public class ReservationService {
         return reservation;
     }
 
+    public void cancelReservationByCustomer(int reservationId, int customerId) {
+        Reservation reservation = reservationDAO.findById(reservationId);
+        if (reservation == null || reservation.getCustomer() == null || reservation.getCustomer().getId() != customerId) {
+            throw new IllegalArgumentException("Reservation not found for this customer.");
+        }
+        ensureCancelable(reservation);
+        cancel(reservation, null);
+    }
+
     public void cancelReservation(int reservationId, int staffId) {
         Reservation reservation = reservationDAO.findById(reservationId);
         if (reservation == null) {
             return;
         }
-        reservation.cancel();
-        persistState(reservation);
-        actionDAO.logCancel(reservationId, staffId);
-        roomDAO.updateStatus(reservation.getRoom().getId(), "available");
-        notifyUsers(reservation, staffId, "Reservation canceled: " + reservationId);
+        ensureCancelable(reservation);
+        cancel(reservation, staffId);
     }
 
     public void checkIn(int reservationId, int staffId) {
@@ -113,6 +119,24 @@ public class ReservationService {
 
     public List<Reservation> listReservationsByFilter(String customerFilter, String roomFilter) {
         return reservationDAO.findByFilters(customerFilter, roomFilter);
+    }
+
+    private void cancel(Reservation reservation, Integer staffId) {
+        reservation.cancel();
+        persistState(reservation);
+        actionDAO.logCancel(reservation.getReservationId(), staffId);
+        roomDAO.updateStatus(reservation.getRoom().getId(), "available");
+        notifyUsers(reservation, staffId == null ? 0 : staffId, "Reservation canceled: " + reservation.getReservationId());
+    }
+
+    private void ensureCancelable(Reservation reservation) {
+        String state = reservation.getCurrentState().getName();
+        if ("canceled".equals(state)) {
+            throw new IllegalStateException("Reservation already canceled.");
+        }
+        if ("checked_in".equals(state) || "completed".equals(state)) {
+            throw new IllegalStateException("Reservation cannot be canceled after check-in or completion.");
+        }
     }
 
     private void persistState(Reservation reservation) {

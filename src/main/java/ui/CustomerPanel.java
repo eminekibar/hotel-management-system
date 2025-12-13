@@ -196,9 +196,14 @@ public class CustomerPanel extends JFrame {
         }
         String entry = reservationListModel.get(idx);
         int reservationId = Integer.parseInt(entry.split("\\|")[0].trim());
-        reservationService.cancelReservation(reservationId, 0);
-        refreshReservations();
-        refreshHistory();
+        try {
+            reservationService.cancelReservationByCustomer(reservationId, customer.getId());
+            refreshReservations();
+            refreshHistory();
+            JOptionPane.showMessageDialog(this, "Reservation canceled");
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Cancel failed", JOptionPane.WARNING_MESSAGE);
+        }
     }
 
     private void refreshHistory() {
