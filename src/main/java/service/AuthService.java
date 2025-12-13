@@ -15,16 +15,16 @@ public class AuthService {
         this.staffDAO = new StaffDAO();
     }
 
-    public Customer loginCustomer(String email, String passwordHash) {
-        Customer customer = customerDAO.findByEmail(email);
+    public Customer loginCustomer(String identifier, String passwordHash) {
+        Customer customer = customerDAO.findByIdentifier(identifier);
         if (customer != null && passwordHash.equals(customer.getPasswordHash())) {
             return customer;
         }
         return null;
     }
 
-    public Staff loginStaff(String email, String passwordHash) {
-        Staff staff = staffDAO.findByEmail(email);
+    public Staff loginStaff(String identifier, String passwordHash) {
+        Staff staff = staffDAO.findByIdentifier(identifier);
         if (staff != null && passwordHash.equals(staff.getPasswordHash())) {
             return staff;
         }

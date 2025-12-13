@@ -5,6 +5,7 @@ import factory.RoomFactory;
 import model.room.Room;
 
 import java.util.List;
+import java.time.LocalDate;
 
 public class RoomService {
 
@@ -27,7 +28,11 @@ public class RoomService {
         return roomDAO.findAll();
     }
 
-    public List<Room> search(String type, int capacity) {
-        return roomDAO.search(type, capacity);
+    public List<Room> search(String type, int capacity, LocalDate startDate, LocalDate endDate) {
+        return roomDAO.search(type, capacity, startDate, endDate);
+    }
+
+    public void updateStatus(int roomId, String status) {
+        roomDAO.updateStatus(roomId, status);
     }
 }

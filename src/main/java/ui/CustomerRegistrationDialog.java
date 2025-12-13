@@ -10,6 +10,7 @@ public class CustomerRegistrationDialog extends JDialog {
 
     private final JTextField firstNameField = new JTextField();
     private final JTextField lastNameField = new JTextField();
+    private final JTextField usernameField = new JTextField();
     private final JTextField emailField = new JTextField();
     private final JTextField phoneField = new JTextField();
     private final JTextField nationalIdField = new JTextField();
@@ -33,6 +34,7 @@ public class CustomerRegistrationDialog extends JDialog {
         int row = 0;
         addRow(panel, gbc, row++, "First Name", firstNameField);
         addRow(panel, gbc, row++, "Last Name", lastNameField);
+        addRow(panel, gbc, row++, "Username", usernameField);
         addRow(panel, gbc, row++, "Email", emailField);
         addRow(panel, gbc, row++, "Phone", phoneField);
         addRow(panel, gbc, row++, "National ID", nationalIdField);
@@ -57,6 +59,7 @@ public class CustomerRegistrationDialog extends JDialog {
 
     private void submit() {
         Customer customer = customerService.register(
+                usernameField.getText().trim(),
                 firstNameField.getText().trim(),
                 lastNameField.getText().trim(),
                 emailField.getText().trim(),

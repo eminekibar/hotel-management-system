@@ -16,15 +16,16 @@ public class CustomerDAO {
     }
 
     public int create(Customer customer) {
-        String sql = "INSERT INTO customers (first_name, last_name, email, phone, national_id, password_hash, is_active) VALUES (?,?,?,?,?,?,?)";
+        String sql = "INSERT INTO customers (username, first_name, last_name, email, phone, national_id, password_hash, is_active) VALUES (?,?,?,?,?,?,?,?)";
         try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, customer.getFirstName());
-            ps.setString(2, customer.getLastName());
-            ps.setString(3, customer.getEmail());
-            ps.setString(4, customer.getPhone());
-            ps.setString(5, customer.getNationalId());
-            ps.setString(6, customer.getPasswordHash());
-            ps.setBoolean(7, customer.isActive());
+            ps.setString(1, customer.getUsername());
+            ps.setString(2, customer.getFirstName());
+            ps.setString(3, customer.getLastName());
+            ps.setString(4, customer.getEmail());
+            ps.setString(5, customer.getPhone());
+            ps.setString(6, customer.getNationalId());
+            ps.setString(7, customer.getPasswordHash());
+            ps.setBoolean(8, customer.isActive());
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
@@ -50,6 +51,23 @@ public class CustomerDAO {
             }
         } catch (SQLException e) {
             throw new RuntimeException("Failed to find customer", e);
+        }
+        return null;
+    }
+
+    public Customer findByIdentifier(String identifier) {
+        String sql = "SELECT * FROM customers WHERE username=? OR email=? OR national_id=?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, identifier);
+            ps.setString(2, identifier);
+            ps.setString(3, identifier);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapRow(rs);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find customer by identifier", e);
         }
         return null;
     }
@@ -83,16 +101,43 @@ public class CustomerDAO {
         return customers;
     }
 
-    public void update(Customer customer) {
-        String sql = "UPDATE customers SET first_name=?, last_name=?, email=?, phone=?, national_id=?, is_active=? WHERE customer_id=?";
+    public List<Customer> search(String term) {
+        List<Customer> customers = new ArrayList<>();
+        String like = "%" + term + "%";
+        String sql = """
+                SELECT * FROM customers
+                WHERE first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR phone LIKE ? OR national_id LIKE ? OR username LIKE ?
+                """;
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, customer.getFirstName());
-            ps.setString(2, customer.getLastName());
-            ps.setString(3, customer.getEmail());
-            ps.setString(4, customer.getPhone());
-            ps.setString(5, customer.getNationalId());
-            ps.setBoolean(6, customer.isActive());
-            ps.setInt(7, customer.getId());
+            ps.setString(1, like);
+            ps.setString(2, like);
+            ps.setString(3, like);
+            ps.setString(4, like);
+            ps.setString(5, like);
+            ps.setString(6, like);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    customers.add(mapRow(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to search customers", e);
+        }
+        return customers;
+    }
+
+    public void update(Customer customer) {
+        String sql = "UPDATE customers SET username=?, first_name=?, last_name=?, email=?, phone=?, national_id=?, password_hash=?, is_active=? WHERE customer_id=?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, customer.getUsername());
+            ps.setString(2, customer.getFirstName());
+            ps.setString(3, customer.getLastName());
+            ps.setString(4, customer.getEmail());
+            ps.setString(5, customer.getPhone());
+            ps.setString(6, customer.getNationalId());
+            ps.setString(7, customer.getPasswordHash());
+            ps.setBoolean(8, customer.isActive());
+            ps.setInt(9, customer.getId());
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Failed to update customer", e);
@@ -112,6 +157,7 @@ public class CustomerDAO {
     private Customer mapRow(ResultSet rs) throws SQLException {
         Customer customer = new Customer();
         customer.setId(rs.getInt("customer_id"));
+        customer.setUsername(rs.getString("username"));
         customer.setFirstName(rs.getString("first_name"));
         customer.setLastName(rs.getString("last_name"));
         customer.setEmail(rs.getString("email"));

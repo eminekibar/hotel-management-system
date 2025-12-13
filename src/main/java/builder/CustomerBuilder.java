@@ -8,6 +8,11 @@ import model.user.Customer;
 public class CustomerBuilder {
     private final Customer.Builder builder = Customer.builder();
 
+    public CustomerBuilder username(String username) {
+        builder.username(username);
+        return this;
+    }
+
     public CustomerBuilder firstName(String firstName) {
         builder.firstName(firstName);
         return this;

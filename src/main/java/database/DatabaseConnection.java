@@ -12,7 +12,8 @@ public final class DatabaseConnection {
     private static DatabaseConnection instance;
     private Connection connection;
 
-    private static final String URL = "jdbc:mysql://localhost:3306/hotel_db?useSSL=false&serverTimezone=UTC";
+    // Use explicit IPv4 to avoid IPv6/localhost binding issues on MariaDB
+    private static final String URL = "jdbc:mysql://127.0.0.1:3307/hotel_db?useSSL=false&serverTimezone=UTC";
     private static final String USER = "root";
     private static final String PASSWORD = "";
 

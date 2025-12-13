@@ -11,11 +11,12 @@ public final class RoomFactory {
     }
 
     public static Room createRoom(String type) {
-        return switch (type.toLowerCase()) {
-            case "standard" -> new StandardRoom();
+        String normalized = type == null ? "" : type.trim().toLowerCase();
+        return switch (normalized) {
+            case "standard", "single", "double" -> new StandardRoom();
             case "suite" -> new SuiteRoom();
-            case "family" -> new FamilyRoom();
-            default -> throw new IllegalArgumentException("Unknown room type: " + type);
+            case "family", "triple" -> new FamilyRoom();
+            default -> new StandardRoom(); // fallback to avoid query failures on unknown types
         };
     }
 }

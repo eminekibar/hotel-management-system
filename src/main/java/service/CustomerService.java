@@ -12,8 +12,9 @@ public class CustomerService {
         this.customerDAO = new CustomerDAO();
     }
 
-    public Customer register(String firstName, String lastName, String email, String phone, String nationalId, String passwordHash) {
+    public Customer register(String username, String firstName, String lastName, String email, String phone, String nationalId, String passwordHash) {
         Customer customer = new CustomerBuilder()
+                .username(username)
                 .firstName(firstName)
                 .lastName(lastName)
                 .email(email)
@@ -47,5 +48,12 @@ public class CustomerService {
 
     public java.util.List<Customer> listCustomers() {
         return customerDAO.findAll();
+    }
+
+    public java.util.List<Customer> searchCustomers(String query) {
+        if (query == null || query.isBlank()) {
+            return customerDAO.findAll();
+        }
+        return customerDAO.search(query);
     }
 }

@@ -22,10 +22,15 @@ public class StaffPanel extends JFrame {
 
     private final DefaultListModel<String> customerListModel = new DefaultListModel<>();
     private List<Customer> cachedCustomers;
+    private final JTextField customerSearchField = new JTextField();
+
     private final DefaultListModel<String> roomListModel = new DefaultListModel<>();
     private List<Room> cachedRooms;
+
     private final DefaultListModel<String> reservationListModel = new DefaultListModel<>();
     private List<Reservation> cachedReservations;
+    private final JTextField reservationCustomerFilter = new JTextField();
+    private final JTextField reservationRoomFilter = new JTextField();
 
     private final JTextField roomNumberField = new JTextField();
     private final JComboBox<String> roomTypeBox = new JComboBox<>(new String[]{"standard", "suite", "family"});
@@ -44,7 +49,7 @@ public class StaffPanel extends JFrame {
         this.staff = staff;
         setTitle("Staff Panel - " + staff.getDisplayName());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(900, 600);
+        setSize(950, 650);
         setLocationRelativeTo(null);
         buildUi();
         refreshCustomers();
@@ -54,17 +59,38 @@ public class StaffPanel extends JFrame {
     }
 
     private void buildUi() {
+        setLayout(new BorderLayout());
+        JPanel header = new JPanel(new BorderLayout());
+        header.add(new JLabel("Logged in as: " + staff.getDisplayName()), BorderLayout.WEST);
+        JButton logout = new JButton("Logout");
+        logout.addActionListener(e -> logout());
+        header.add(logout, BorderLayout.EAST);
+        add(header, BorderLayout.NORTH);
+
         JTabbedPane tabs = new JTabbedPane();
         tabs.addTab("Customers", customersPanel());
         tabs.addTab("Rooms", roomsPanel());
         tabs.addTab("Reservations", reservationsPanel());
-        add(tabs);
+        add(tabs, BorderLayout.CENTER);
     }
 
     private JPanel customersPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         JList<String> list = new JList<>(customerListModel);
         panel.add(new JScrollPane(list), BorderLayout.CENTER);
+
+        JPanel top = new JPanel(new BorderLayout(4, 4));
+        top.add(customerSearchField, BorderLayout.CENTER);
+        JButton search = new JButton("Search");
+        search.addActionListener(e -> refreshCustomers());
+        JButton addCustomer = new JButton("Add Customer");
+        addCustomer.addActionListener(e -> openCustomerDialog());
+        JPanel buttons = new JPanel();
+        buttons.add(search);
+        buttons.add(addCustomer);
+        top.add(buttons, BorderLayout.EAST);
+        panel.add(top, BorderLayout.NORTH);
+
         JButton refresh = new JButton("Refresh");
         refresh.addActionListener(e -> refreshCustomers());
         panel.add(refresh, BorderLayout.SOUTH);
@@ -112,6 +138,16 @@ public class StaffPanel extends JFrame {
         buttons.add(refresh);
         panel.add(buttons, BorderLayout.SOUTH);
 
+        JPanel filterPanel = new JPanel(new GridLayout(0, 5, 4, 4));
+        filterPanel.setBorder(BorderFactory.createTitledBorder("Filter Reservations"));
+        filterPanel.add(new JLabel("Customer"));
+        filterPanel.add(reservationCustomerFilter);
+        filterPanel.add(new JLabel("Room"));
+        filterPanel.add(reservationRoomFilter);
+        JButton applyFilter = new JButton("Apply");
+        applyFilter.addActionListener(e -> refreshReservations());
+        filterPanel.add(applyFilter);
+
         JPanel createPanel = new JPanel(new GridLayout(0, 2, 4, 4));
         createPanel.setBorder(BorderFactory.createTitledBorder("Create Reservation"));
         createPanel.add(new JLabel("Customer ID"));
@@ -132,15 +168,19 @@ public class StaffPanel extends JFrame {
         JButton createReservationBtn = new JButton("Create Reservation");
         createReservationBtn.addActionListener(e -> createReservation(searchRoomsList.getSelectedIndex()));
         createPanel.add(createReservationBtn);
-        panel.add(createPanel, BorderLayout.NORTH);
+
+        JPanel header = new JPanel(new BorderLayout());
+        header.add(filterPanel, BorderLayout.NORTH);
+        header.add(createPanel, BorderLayout.CENTER);
+        panel.add(header, BorderLayout.NORTH);
         return panel;
     }
 
     private void refreshCustomers() {
-        cachedCustomers = customerService.listCustomers();
+        cachedCustomers = customerService.searchCustomers(customerSearchField.getText().trim());
         customerListModel.clear();
         for (Customer c : cachedCustomers) {
-            customerListModel.addElement(c.getId() + " | " + c.getDisplayName() + " | " + c.getEmail());
+            customerListModel.addElement(c.getId() + " | " + c.getDisplayName() + " | " + c.getUsername() + " | " + c.getEmail());
         }
     }
 
@@ -148,15 +188,22 @@ public class StaffPanel extends JFrame {
         cachedRooms = roomService.listRooms();
         roomListModel.clear();
         for (Room room : cachedRooms) {
-            roomListModel.addElement(room.getId() + " | " + room.getRoomNumber() + " | " + room.getType() + " | " + room.getPricePerNight());
+            roomListModel.addElement(room.getId() + " | " + room.getRoomNumber() + " | " + room.getType() + " | " + room.getStatus() + " | " + room.getPricePerNight());
         }
     }
 
     private void refreshReservations() {
-        cachedReservations = reservationService.listReservations();
+        cachedReservations = reservationService.listReservationsByFilter(
+                reservationCustomerFilter.getText().trim(),
+                reservationRoomFilter.getText().trim()
+        );
         reservationListModel.clear();
         for (Reservation res : cachedReservations) {
-            reservationListModel.addElement(res.getReservationId() + " | cust#" + res.getCustomer().getId() + " | " + res.getCurrentState().getName());
+            reservationListModel.addElement(
+                    res.getReservationId() + " | cust#" + res.getCustomer().getId() + " " + res.getCustomer().getDisplayName() +
+                            " | room " + res.getRoom().getRoomNumber() + " (" + res.getRoom().getType() + ")" +
+                            " | " + res.getCurrentState().getName()
+            );
         }
     }
 
@@ -184,15 +231,22 @@ public class StaffPanel extends JFrame {
             }
         }
         refreshReservations();
+        refreshRooms();
     }
 
     private void searchRoomsForReservation() {
-        String type = (String) resRoomTypeBox.getSelectedItem();
-        int capacity = (Integer) resCapacitySpinner.getValue();
-        resSearchRooms = roomService.search(type, capacity);
-        resSearchRoomsModel.clear();
-        for (Room room : resSearchRooms) {
-            resSearchRoomsModel.addElement(room.getRoomNumber() + " | " + room.getType() + " | " + room.getCapacity());
+        try {
+            String type = (String) resRoomTypeBox.getSelectedItem();
+            int capacity = (Integer) resCapacitySpinner.getValue();
+            LocalDate start = LocalDate.parse(resStartDateField.getText().trim());
+            LocalDate end = LocalDate.parse(resEndDateField.getText().trim());
+            resSearchRooms = roomService.search(type, capacity, start, end);
+            resSearchRoomsModel.clear();
+            for (Room room : resSearchRooms) {
+                resSearchRoomsModel.addElement(room.getRoomNumber() + " | " + room.getType() + " | " + room.getCapacity());
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Invalid room search data: " + e.getMessage());
         }
     }
 
@@ -214,8 +268,20 @@ public class StaffPanel extends JFrame {
             Reservation reservation = reservationService.createReservation(customer, room, start, end);
             JOptionPane.showMessageDialog(this, "Reservation created: " + reservation.getReservationId());
             refreshReservations();
+            refreshRooms();
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Failed to create reservation: " + e.getMessage());
         }
+    }
+
+    private void openCustomerDialog() {
+        CustomerRegistrationDialog dialog = new CustomerRegistrationDialog(this, customerService);
+        dialog.setVisible(true);
+        refreshCustomers();
+    }
+
+    private void logout() {
+        dispose();
+        new LoginForm();
     }
 }

@@ -10,6 +10,7 @@ public class Customer extends BaseUser {
     }
 
     private Customer(Builder builder) {
+        this.username = builder.username;
         this.firstName = builder.firstName;
         this.lastName = builder.lastName;
         this.email = builder.email;
@@ -53,12 +54,18 @@ public class Customer extends BaseUser {
     }
 
     public static class Builder {
+        private String username;
         private String firstName;
         private String lastName;
         private String email;
         private String passwordHash;
         private String phone;
         private String nationalId;
+
+        public Builder username(String username) {
+            this.username = username;
+            return this;
+        }
 
         public Builder firstName(String firstName) {
             this.firstName = firstName;

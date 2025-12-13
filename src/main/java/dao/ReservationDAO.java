@@ -61,7 +61,7 @@ public class ReservationDAO {
 
     public List<Reservation> findByCustomer(int customerId) {
         List<Reservation> reservations = new ArrayList<>();
-        String sql = "SELECT * FROM reservations WHERE customer_id = ?";
+        String sql = "SELECT * FROM reservations WHERE customer_id = ? ORDER BY created_at DESC";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, customerId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -75,9 +75,30 @@ public class ReservationDAO {
         return reservations;
     }
 
+    public List<Reservation> findHistoryByCustomer(int customerId) {
+        List<Reservation> reservations = new ArrayList<>();
+        String sql = """
+                SELECT * FROM reservations
+                WHERE customer_id = ?
+                  AND (status IN ('completed','canceled') OR end_date < CURRENT_DATE)
+                ORDER BY end_date DESC
+                """;
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, customerId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    reservations.add(mapRow(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to list reservation history", e);
+        }
+        return reservations;
+    }
+
     public List<Reservation> findAll() {
         List<Reservation> reservations = new ArrayList<>();
-        String sql = "SELECT * FROM reservations";
+        String sql = "SELECT * FROM reservations ORDER BY created_at DESC";
         try (PreparedStatement ps = connection.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
@@ -102,6 +123,45 @@ public class ReservationDAO {
 
     public void cancel(int reservationId) {
         updateStatus(reservationId, "canceled");
+    }
+
+    public List<Reservation> findByFilters(String customerFilter, String roomFilter) {
+        List<Reservation> reservations = new ArrayList<>();
+        List<String> clauses = new ArrayList<>();
+        List<String> params = new ArrayList<>();
+        if (customerFilter != null && !customerFilter.isBlank()) {
+            clauses.add("customer_id IN (SELECT customer_id FROM customers WHERE first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR national_id LIKE ? OR username LIKE ?)");
+            String like = "%" + customerFilter + "%";
+            params.add(like);
+            params.add(like);
+            params.add(like);
+            params.add(like);
+            params.add(like);
+        }
+        if (roomFilter != null && !roomFilter.isBlank()) {
+            clauses.add("room_id IN (SELECT room_id FROM rooms WHERE room_number LIKE ? OR room_type LIKE ?)");
+            String like = "%" + roomFilter + "%";
+            params.add(like);
+            params.add(like);
+        }
+        StringBuilder sql = new StringBuilder("SELECT * FROM reservations");
+        if (!clauses.isEmpty()) {
+            sql.append(" WHERE ").append(String.join(" AND ", clauses));
+        }
+        sql.append(" ORDER BY created_at DESC");
+        try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setString(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    reservations.add(mapRow(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to filter reservations", e);
+        }
+        return reservations;
     }
 
     private Reservation mapRow(ResultSet rs) throws SQLException {

@@ -9,7 +9,7 @@ import javax.swing.*;
 import java.awt.*;
 
 public class LoginForm extends JFrame {
-    private final JTextField emailField = new JTextField();
+    private final JTextField identifierField = new JTextField();
     private final JPasswordField passwordField = new JPasswordField();
     private final JComboBox<String> userTypeBox = new JComboBox<>(new String[]{"Customer", "Staff"});
     private final AuthService authService = new AuthService();
@@ -37,9 +37,9 @@ public class LoginForm extends JFrame {
 
         gbc.gridx = 0;
         gbc.gridy = 1;
-        panel.add(new JLabel("Email"), gbc);
+        panel.add(new JLabel("Username / Email / National ID"), gbc);
         gbc.gridx = 1;
-        panel.add(emailField, gbc);
+        panel.add(identifierField, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 2;
@@ -62,12 +62,12 @@ public class LoginForm extends JFrame {
     }
 
     private void doLogin() {
-        String email = emailField.getText().trim();
+        String identifier = identifierField.getText().trim();
         String password = new String(passwordField.getPassword());
         String userType = (String) userTypeBox.getSelectedItem();
 
         if ("Customer".equals(userType)) {
-            Customer customer = authService.loginCustomer(email, password);
+            Customer customer = authService.loginCustomer(identifier, password);
             if (customer != null) {
                 new CustomerPanel(customer);
                 dispose();
@@ -75,7 +75,7 @@ public class LoginForm extends JFrame {
                 JOptionPane.showMessageDialog(this, "Customer not found or wrong credentials");
             }
         } else {
-            Staff staff = authService.loginStaff(email, password);
+            Staff staff = authService.loginStaff(identifier, password);
             if (staff != null) {
                 new StaffPanel(staff);
                 dispose();

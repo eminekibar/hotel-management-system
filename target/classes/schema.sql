@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS customers (
     customer_id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) UNIQUE,
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     email VARCHAR(150) UNIQUE,
@@ -12,16 +13,15 @@ CREATE TABLE IF NOT EXISTS customers (
 
 CREATE TABLE IF NOT EXISTS staff (
     staff_id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) UNIQUE,
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     email VARCHAR(150) UNIQUE,
+    national_id VARCHAR(11) UNIQUE,
     password_hash VARCHAR(255),
     role VARCHAR(50),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
-
-INSERT INTO staff (first_name, last_name, email, password_hash, role)
-VALUES ('staff', 'staff', 'staff@mail.com', 'staff123', 'admin');
 
 CREATE TABLE IF NOT EXISTS rooms (
     room_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS rooms (
     room_type VARCHAR(50),
     capacity INT,
     price_per_night DECIMAL(10,2),
-    status ENUM('available','maintenance','inactive') DEFAULT 'available'
+    status ENUM('available','reserved','occupied','maintenance','inactive') DEFAULT 'available'
 );
 
 CREATE TABLE IF NOT EXISTS reservations (
@@ -63,3 +63,17 @@ CREATE TABLE IF NOT EXISTS notifications (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     is_read BOOLEAN DEFAULT FALSE
 );
+
+INSERT INTO staff (username, first_name, last_name, email, national_id, password_hash, role) VALUES
+('admin', 'Staff', 'Admin', 'staff@mail.com', '90000000001', 'staff123', 'admin'),
+('staff2', 'Staff', 'Two', 'staff2@mail.com', '90000000002', 'staff2pass', 'reception');
+
+INSERT INTO rooms (room_number, room_type, capacity, price_per_night, status) VALUES
+('101', 'standard', 1, 75.00, 'available'),
+('202', 'family', 3, 120.00, 'available'),
+('303', 'suite', 4, 250.00, 'maintenance');
+
+INSERT INTO customers (username, first_name, last_name, email, phone, national_id, password_hash, is_active) VALUES
+('ayse', 'Ayse', 'Yilmaz', 'ayse.yilmaz@mail.com', '+90-530-111-1111', '10000000001', 'pass123', TRUE),
+('mehmet', 'Mehmet', 'Demir', 'mehmet.demir@mail.com', '+90-532-222-2222', '10000000002', 'pass123', TRUE),
+('elif', 'Elif', 'Kaya', 'elif.kaya@mail.com', '+90-534-333-3333', '10000000003', 'pass123', TRUE);

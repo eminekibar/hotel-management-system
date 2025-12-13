@@ -7,6 +7,7 @@ import model.room.Room;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDate;
 
 public class RoomDAO {
 
@@ -23,7 +24,7 @@ public class RoomDAO {
             ps.setString(2, room.getType());
             ps.setInt(3, room.getCapacity());
             ps.setDouble(4, room.getPricePerNight());
-            ps.setString(5, "available");
+            ps.setString(5, room.getStatus() == null ? "available" : room.getStatus());
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
@@ -67,12 +68,23 @@ public class RoomDAO {
         return rooms;
     }
 
-    public List<Room> search(String type, int capacity) {
+    public List<Room> search(String type, int capacity, LocalDate startDate, LocalDate endDate) {
         List<Room> rooms = new ArrayList<>();
-        String sql = "SELECT * FROM rooms WHERE room_type=? AND capacity>=? AND status='available'";
+        String sql = """
+                SELECT * FROM rooms r
+                WHERE r.room_type=? AND r.capacity>=? AND r.status IN ('available','reserved')
+                AND NOT EXISTS (
+                    SELECT 1 FROM reservations res
+                    WHERE res.room_id = r.room_id
+                      AND res.status NOT IN ('canceled')
+                      AND NOT (res.end_date <= ? OR res.start_date >= ?)
+                )
+                """;
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, type);
             ps.setInt(2, capacity);
+            ps.setDate(3, Date.valueOf(startDate));
+            ps.setDate(4, Date.valueOf(endDate));
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     rooms.add(mapRow(rs));
@@ -85,16 +97,28 @@ public class RoomDAO {
     }
 
     public void update(Room room) {
-        String sql = "UPDATE rooms SET room_number=?, capacity=?, price_per_night=?, status=? WHERE room_id=?";
+        String sql = "UPDATE rooms SET room_number=?, room_type=?, capacity=?, price_per_night=?, status=? WHERE room_id=?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, room.getRoomNumber());
-            ps.setInt(2, room.getCapacity());
-            ps.setDouble(3, room.getPricePerNight());
-            ps.setString(4, "available");
-            ps.setInt(5, room.getId());
+            ps.setString(2, room.getType());
+            ps.setInt(3, room.getCapacity());
+            ps.setDouble(4, room.getPricePerNight());
+            ps.setString(5, room.getStatus());
+            ps.setInt(6, room.getId());
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Failed to update room", e);
+        }
+    }
+
+    public void updateStatus(int roomId, String status) {
+        String sql = "UPDATE rooms SET status=? WHERE room_id=?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, status);
+            ps.setInt(2, roomId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to update room status", e);
         }
     }
 
@@ -104,6 +128,7 @@ public class RoomDAO {
         room.setRoomNumber(rs.getString("room_number"));
         room.setCapacity(rs.getInt("capacity"));
         room.setPricePerNight(rs.getDouble("price_per_night"));
+        room.setStatus(rs.getString("status"));
         return room;
     }
 }

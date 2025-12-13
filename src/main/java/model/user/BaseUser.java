@@ -2,6 +2,7 @@ package model.user;
 
 public abstract class BaseUser {
     protected int id;
+    protected String username;
     protected String firstName;
     protected String lastName;
     protected String email;
@@ -13,6 +14,14 @@ public abstract class BaseUser {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getFirstName() {

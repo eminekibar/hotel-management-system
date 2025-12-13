@@ -5,6 +5,7 @@ public abstract class Room {
     protected String roomNumber;
     protected int capacity;
     protected double pricePerNight;
+    protected String status = "available";
 
     public int getId() {
         return id;
@@ -36,6 +37,14 @@ public abstract class Room {
 
     public void setPricePerNight(double pricePerNight) {
         this.pricePerNight = pricePerNight;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public abstract String getType();
