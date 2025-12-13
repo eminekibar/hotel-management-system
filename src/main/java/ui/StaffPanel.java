@@ -89,9 +89,12 @@ public class StaffPanel extends JFrame {
         search.addActionListener(e -> refreshCustomers());
         JButton addCustomer = new JButton("Add Customer");
         addCustomer.addActionListener(e -> openCustomerDialog());
+        JButton details = new JButton("Details");
+        details.addActionListener(e -> openCustomerDetails(list.getSelectedIndex()));
         JPanel buttons = new JPanel();
         buttons.add(search);
         buttons.add(addCustomer);
+        buttons.add(details);
         top.add(buttons, BorderLayout.EAST);
         panel.add(top, BorderLayout.NORTH);
 
@@ -312,6 +315,16 @@ public class StaffPanel extends JFrame {
         CustomerRegistrationDialog dialog = new CustomerRegistrationDialog(this, customerService);
         dialog.setVisible(true);
         refreshCustomers();
+    }
+
+    private void openCustomerDetails(int index) {
+        if (index < 0 || cachedCustomers == null || index >= cachedCustomers.size()) {
+            JOptionPane.showMessageDialog(this, "Select a customer first");
+            return;
+        }
+        Customer customer = cachedCustomers.get(index);
+        CustomerDetailDialog dialog = new CustomerDetailDialog(this, customer, reservationService);
+        dialog.setVisible(true);
     }
 
     private void logout() {

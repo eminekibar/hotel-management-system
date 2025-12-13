@@ -2,6 +2,7 @@ state\CheckedInState.class
 model\room\StandardRoom.class
 service\RoomService.class
 model\reservation\Reservation.class
+ui\CustomerDetailDialog.class
 service\AuthService.class
 dao\CustomerDAO.class
 observer\StaffNotificationObserver.class
