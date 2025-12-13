@@ -44,7 +44,7 @@ public class RoomService {
         for (Room room : rooms) {
             Reservation overlap = reservationDAO.findFirstOverlapForRoom(room.getId(), startDate, endDate);
             String label = availabilityLabel(room, overlap);
-            boolean bookable = overlap == null && "available".equals(room.getStatus());
+            boolean bookable = overlap == null && isRoomBookableByStatus(room.getStatus());
             results.add(new RoomAvailabilityInfo(room, label, bookable, overlap));
         }
         return results;
@@ -53,18 +53,16 @@ public class RoomService {
     private String availabilityLabel(Room room, Reservation overlap) {
         String status = room.getStatus();
         if (overlap != null) {
-            return "reserved (overlaps " + overlap.getStartDate() + " - " + overlap.getEndDate() + ", status=" + overlap.getCurrentState().getName() + ")";
+            return "unavailable (overlaps " + overlap.getStartDate() + " - " + overlap.getEndDate() + ", status=" + overlap.getCurrentState().getName() + ")";
         }
         if ("maintenance".equals(status) || "inactive".equals(status)) {
             return status;
         }
-        if ("occupied".equals(status)) {
-            return "occupied";
-        }
-        if ("reserved".equals(status)) {
-            return "reserved";
-        }
         return "available";
+    }
+
+    private boolean isRoomBookableByStatus(String status) {
+        return !"maintenance".equals(status) && !"inactive".equals(status);
     }
 
     public void updateStatus(int roomId, String status) {

@@ -44,6 +44,10 @@ public class StaffPanel extends JFrame {
     private final JSpinner resCapacitySpinner = new JSpinner(new SpinnerNumberModel(2, 1, 6, 1));
     private final DefaultListModel<String> resSearchRoomsModel = new DefaultListModel<>();
     private List<model.room.RoomAvailabilityInfo> resSearchRooms;
+    private final JList<String> reservationList = new JList<>(reservationListModel);
+    private final JTextField resCustomerIdentifierField = new JTextField();
+    private final JLabel selectedCustomerLabel = new JLabel("No customer selected");
+    private Customer selectedCustomerForReservation;
 
     public StaffPanel(Staff staff) {
         this.staff = staff;
@@ -119,21 +123,29 @@ public class StaffPanel extends JFrame {
     }
 
     private JPanel reservationsPanel() {
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.addTab("List & Manage", manageReservationsPanel());
+        tabs.addTab("Create New", createReservationPanel());
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.add(tabs, BorderLayout.CENTER);
+        return wrapper;
+    }
+
+    private JPanel manageReservationsPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        JList<String> list = new JList<>(reservationListModel);
-        panel.add(new JScrollPane(list), BorderLayout.CENTER);
+        panel.add(new JScrollPane(reservationList), BorderLayout.CENTER);
 
         JPanel buttons = new JPanel();
         JButton checkIn = new JButton("Check-in");
-        checkIn.addActionListener(e -> performOnSelected(list.getSelectedIndex(), "checkin"));
+        checkIn.addActionListener(e -> performOnSelected(reservationList.getSelectedIndex(), "checkin"));
         JButton checkOut = new JButton("Check-out");
-        checkOut.addActionListener(e -> performOnSelected(list.getSelectedIndex(), "checkout"));
+        checkOut.addActionListener(e -> performOnSelected(reservationList.getSelectedIndex(), "checkout"));
         JButton cancel = new JButton("Cancel");
-        cancel.addActionListener(e -> performOnSelected(list.getSelectedIndex(), "cancel"));
+        cancel.addActionListener(e -> performOnSelected(reservationList.getSelectedIndex(), "cancel"));
         JButton markPaid = new JButton("Mark Paid");
-        markPaid.addActionListener(e -> performOnSelected(list.getSelectedIndex(), "markPaid"));
+        markPaid.addActionListener(e -> performOnSelected(reservationList.getSelectedIndex(), "markPaid"));
         JButton refund = new JButton("Refund");
-        refund.addActionListener(e -> performOnSelected(list.getSelectedIndex(), "refund"));
+        refund.addActionListener(e -> performOnSelected(reservationList.getSelectedIndex(), "refund"));
         JButton refresh = new JButton("Refresh");
         refresh.addActionListener(e -> refreshReservations());
         buttons.add(checkIn);
@@ -153,11 +165,21 @@ public class StaffPanel extends JFrame {
         JButton applyFilter = new JButton("Apply");
         applyFilter.addActionListener(e -> refreshReservations());
         filterPanel.add(applyFilter);
+        panel.add(filterPanel, BorderLayout.NORTH);
+        return panel;
+    }
 
+    private JPanel createReservationPanel() {
         JPanel createPanel = new JPanel(new GridLayout(0, 2, 4, 4));
         createPanel.setBorder(BorderFactory.createTitledBorder("Create Reservation"));
-        createPanel.add(new JLabel("Customer ID"));
-        createPanel.add(resCustomerIdField);
+        createPanel.add(new JLabel("Customer (username/email/TC)"));
+        createPanel.add(resCustomerIdentifierField);
+        createPanel.add(new JLabel("Selected"));
+        createPanel.add(selectedCustomerLabel);
+        JButton loadCustomerBtn = new JButton("Load Customer");
+        loadCustomerBtn.addActionListener(e -> loadCustomerForReservation());
+        createPanel.add(loadCustomerBtn);
+        createPanel.add(new JLabel(""));
         createPanel.add(new JLabel("Start Date"));
         createPanel.add(resStartDateField);
         createPanel.add(new JLabel("End Date"));
@@ -174,12 +196,7 @@ public class StaffPanel extends JFrame {
         JButton createReservationBtn = new JButton("Create Reservation");
         createReservationBtn.addActionListener(e -> createReservation(searchRoomsList.getSelectedIndex()));
         createPanel.add(createReservationBtn);
-
-        JPanel header = new JPanel(new BorderLayout());
-        header.add(filterPanel, BorderLayout.NORTH);
-        header.add(createPanel, BorderLayout.CENTER);
-        panel.add(header, BorderLayout.NORTH);
-        return panel;
+        return createPanel;
     }
 
     private void refreshCustomers() {
@@ -269,13 +286,11 @@ public class StaffPanel extends JFrame {
             JOptionPane.showMessageDialog(this, "Select a room first");
             return;
         }
+        if (selectedCustomerForReservation == null) {
+            JOptionPane.showMessageDialog(this, "Load a customer first");
+            return;
+        }
         try {
-            int customerId = Integer.parseInt(resCustomerIdField.getText().trim());
-            Customer customer = customerService.getProfile(customerId);
-            if (customer == null) {
-                JOptionPane.showMessageDialog(this, "Customer not found");
-                return;
-            }
             model.room.RoomAvailabilityInfo info = resSearchRooms.get(selectedRoomIndex);
             if (!info.isBookable()) {
                 JOptionPane.showMessageDialog(this, "Room is not available for these dates.");
@@ -284,7 +299,7 @@ public class StaffPanel extends JFrame {
             Room room = info.getRoom();
             LocalDate start = LocalDate.parse(resStartDateField.getText().trim());
             LocalDate end = LocalDate.parse(resEndDateField.getText().trim());
-            Reservation reservation = reservationService.createReservation(customer, room, start, end);
+            Reservation reservation = reservationService.createReservation(selectedCustomerForReservation, room, start, end);
             JOptionPane.showMessageDialog(this, "Reservation created: " + reservation.getReservationId());
             refreshReservations();
             refreshRooms();
@@ -302,5 +317,26 @@ public class StaffPanel extends JFrame {
     private void logout() {
         dispose();
         new LoginForm();
+    }
+
+    private void loadCustomerForReservation() {
+        String identifier = resCustomerIdentifierField.getText().trim();
+        if (identifier.isBlank()) {
+            JOptionPane.showMessageDialog(this, "Enter username/email/TC to load customer.");
+            return;
+        }
+        try {
+            Customer customer = customerService.findByIdentifier(identifier);
+            if (customer == null) {
+                selectedCustomerForReservation = null;
+                selectedCustomerLabel.setText("Not found");
+                JOptionPane.showMessageDialog(this, "Customer not found");
+                return;
+            }
+            selectedCustomerForReservation = customer;
+            selectedCustomerLabel.setText(customer.getId() + " | " + customer.getDisplayName() + " | " + customer.getUsername());
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Failed to load customer: " + ex.getMessage());
+        }
     }
 }

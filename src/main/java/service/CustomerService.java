@@ -58,6 +58,10 @@ public class CustomerService {
         customerDAO.deleteAccount(id);
     }
 
+    public Customer findByIdentifier(String identifier) {
+        return customerDAO.findByIdentifier(identifier);
+    }
+
     public java.util.List<Customer> listCustomers() {
         return customerDAO.findAll();
     }
