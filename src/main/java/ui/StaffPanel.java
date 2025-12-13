@@ -31,6 +31,8 @@ public class StaffPanel extends JFrame {
     private List<Reservation> cachedReservations;
     private final JTextField reservationCustomerFilter = new JTextField();
     private final JTextField reservationRoomFilter = new JTextField();
+    private final JTextField reservationStartFilter = new JTextField();
+    private final JTextField reservationEndFilter = new JTextField();
 
     private final JTextField roomNumberField = new JTextField();
     private final JComboBox<String> roomTypeBox = new JComboBox<>(new String[]{"standard", "suite", "family"});
@@ -165,6 +167,10 @@ public class StaffPanel extends JFrame {
         filterPanel.add(reservationCustomerFilter);
         filterPanel.add(new JLabel("Room"));
         filterPanel.add(reservationRoomFilter);
+        filterPanel.add(new JLabel("Start Date"));
+        filterPanel.add(reservationStartFilter);
+        filterPanel.add(new JLabel("End Date"));
+        filterPanel.add(reservationEndFilter);
         JButton applyFilter = new JButton("Apply");
         applyFilter.addActionListener(e -> refreshReservations());
         filterPanel.add(applyFilter);
@@ -219,15 +225,31 @@ public class StaffPanel extends JFrame {
     }
 
     private void refreshReservations() {
+        java.time.LocalDate start = null;
+        java.time.LocalDate end = null;
+        try {
+            if (!reservationStartFilter.getText().trim().isBlank()) {
+                start = java.time.LocalDate.parse(reservationStartFilter.getText().trim());
+            }
+            if (!reservationEndFilter.getText().trim().isBlank()) {
+                end = java.time.LocalDate.parse(reservationEndFilter.getText().trim());
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Invalid date filter format. Use yyyy-MM-dd");
+            return;
+        }
         cachedReservations = reservationService.listReservationsByFilter(
                 reservationCustomerFilter.getText().trim(),
-                reservationRoomFilter.getText().trim()
+                reservationRoomFilter.getText().trim(),
+                start,
+                end
         );
         reservationListModel.clear();
         for (Reservation res : cachedReservations) {
             reservationListModel.addElement(
                     res.getReservationId() + " | cust#" + res.getCustomer().getId() + " " + res.getCustomer().getDisplayName() +
                             " | room " + res.getRoom().getRoomNumber() + " (" + res.getRoom().getType() + ")" +
+                            " | " + res.getStartDate() + " - " + res.getEndDate() +
                             " | status: " + res.getCurrentState().getName() +
                             " | payment: " + res.getPaymentStatus()
             );

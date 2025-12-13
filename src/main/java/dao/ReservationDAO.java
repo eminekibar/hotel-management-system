@@ -126,10 +126,10 @@ public class ReservationDAO {
         updateStatus(reservationId, "canceled");
     }
 
-    public List<Reservation> findByFilters(String customerFilter, String roomFilter) {
+    public List<Reservation> findByFilters(String customerFilter, String roomFilter, java.time.LocalDate startDate, java.time.LocalDate endDate) {
         List<Reservation> reservations = new ArrayList<>();
         List<String> clauses = new ArrayList<>();
-        List<String> params = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
         if (customerFilter != null && !customerFilter.isBlank()) {
             clauses.add("customer_id IN (SELECT customer_id FROM customers WHERE first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR national_id LIKE ? OR username LIKE ?)");
             String like = "%" + customerFilter + "%";
@@ -145,6 +145,17 @@ public class ReservationDAO {
             params.add(like);
             params.add(like);
         }
+        if (startDate != null && endDate != null) {
+            clauses.add("NOT (end_date < ? OR start_date > ?)");
+            params.add(java.sql.Date.valueOf(startDate));
+            params.add(java.sql.Date.valueOf(endDate));
+        } else if (startDate != null) {
+            clauses.add("end_date >= ?");
+            params.add(java.sql.Date.valueOf(startDate));
+        } else if (endDate != null) {
+            clauses.add("start_date <= ?");
+            params.add(java.sql.Date.valueOf(endDate));
+        }
         StringBuilder sql = new StringBuilder("SELECT * FROM reservations");
         if (!clauses.isEmpty()) {
             sql.append(" WHERE ").append(String.join(" AND ", clauses));
@@ -152,7 +163,12 @@ public class ReservationDAO {
         sql.append(" ORDER BY created_at DESC");
         try (PreparedStatement ps = connection.prepareStatement(sql.toString())) {
             for (int i = 0; i < params.size(); i++) {
-                ps.setString(i + 1, params.get(i));
+                Object p = params.get(i);
+                if (p instanceof String s) {
+                    ps.setString(i + 1, s);
+                } else if (p instanceof java.sql.Date d) {
+                    ps.setDate(i + 1, d);
+                }
             }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {

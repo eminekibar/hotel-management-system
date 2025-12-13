@@ -146,8 +146,8 @@ public class ReservationService {
         return reservationDAO.findHistoryByCustomer(customerId);
     }
 
-    public List<Reservation> listReservationsByFilter(String customerFilter, String roomFilter) {
-        return reservationDAO.findByFilters(customerFilter, roomFilter);
+    public List<Reservation> listReservationsByFilter(String customerFilter, String roomFilter, java.time.LocalDate startDate, java.time.LocalDate endDate) {
+        return reservationDAO.findByFilters(customerFilter, roomFilter, startDate, endDate);
     }
 
     private void cancel(Reservation reservation, Integer staffId) {
