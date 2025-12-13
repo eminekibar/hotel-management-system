@@ -54,6 +54,10 @@ public class CustomerService {
         customerDAO.deactivate(id);
     }
 
+    public void deleteAccount(int id) {
+        customerDAO.deleteAccount(id);
+    }
+
     public java.util.List<Customer> listCustomers() {
         return customerDAO.findAll();
     }

@@ -18,7 +18,7 @@ public class AuthService {
 
     public Customer loginCustomer(String identifier, String rawPassword) {
         Customer customer = customerDAO.findByIdentifier(identifier);
-        if (customer != null && HashUtil.isPasswordMatch(rawPassword, customer.getPasswordHash())) {
+        if (customer != null && customer.isActive() && HashUtil.isPasswordMatch(rawPassword, customer.getPasswordHash())) {
             return customer;
         }
         return null;

@@ -168,6 +168,16 @@ public class CustomerDAO {
         }
     }
 
+    public void deleteAccount(int id) {
+        String sql = "DELETE customers WHERE customer_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to delete customer account", e);
+        }
+    }
+
     private Customer mapRow(ResultSet rs) throws SQLException {
         Customer customer = new Customer();
         customer.setId(rs.getInt("customer_id"));

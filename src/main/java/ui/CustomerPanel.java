@@ -96,6 +96,10 @@ public class CustomerPanel extends JFrame {
         changePassword.addActionListener(e -> updatePassword());
         panel.add(changePassword);
 
+        JButton deleteAccount = new JButton("Delete Account");
+        deleteAccount.addActionListener(e -> deleteAccount());
+        panel.add(deleteAccount);
+
         return panel;
     }
 
@@ -234,5 +238,21 @@ public class CustomerPanel extends JFrame {
     private void logout() {
         dispose();
         new LoginForm();
+    }
+
+    private void deleteAccount() {
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to delete your account?\nExisting reservations will stay active.",
+                "Confirm Delete", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
+        try {
+            customerService.deleteAccount(customer.getId());
+            JOptionPane.showMessageDialog(this, "Account deleted. Existing reservations remain active.");
+            logout();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Failed to delete account: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }
