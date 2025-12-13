@@ -56,6 +56,7 @@ public class ReservationService {
         }
         reservation.setTotalPrice(pricingStrategy.calculatePrice(room, nights));
         reservation.setState(new ActiveState());
+        reservation.setPaymentStatus("unpaid");
 
         reservationDAO.create(reservation);
         roomDAO.updateStatus(room.getId(), "reserved");
@@ -100,6 +101,7 @@ public class ReservationService {
         }
         reservation.checkOut();
         persistState(reservation);
+        reservationDAO.updatePaymentStatus(reservationId, "paid");
         actionDAO.logCheckOut(reservationId, staffId);
         roomDAO.updateStatus(reservation.getRoom().getId(), "available");
         notifyUsers(reservation, staffId, "Check-out completed: " + reservationId);

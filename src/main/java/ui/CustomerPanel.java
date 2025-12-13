@@ -188,7 +188,8 @@ public class CustomerPanel extends JFrame {
             reservationListModel.addElement(
                     res.getReservationId() + " | " + res.getRoom().getRoomNumber() + " | " +
                             res.getStartDate() + " - " + res.getEndDate() + " | " +
-                            res.getCurrentState().getName() + " | $" + res.getTotalPrice()
+                            res.getCurrentState().getName() + " | $" + res.getTotalPrice() +
+                            " | payment: " + res.getPaymentStatus()
             );
         }
     }
@@ -217,7 +218,8 @@ public class CustomerPanel extends JFrame {
             historyListModel.addElement(
                     res.getReservationId() + " | " + res.getRoom().getRoomNumber() + " | " +
                             res.getStartDate() + " - " + res.getEndDate() + " | " +
-                            res.getCurrentState().getName() + " | $" + res.getTotalPrice()
+                            res.getCurrentState().getName() + " | $" + res.getTotalPrice() +
+                            " | payment: " + res.getPaymentStatus()
             );
         }
     }

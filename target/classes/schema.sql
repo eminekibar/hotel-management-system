@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS reservations (
     start_date DATE,
     end_date DATE,
     total_price DECIMAL(10,2),
+    payment_status ENUM('unpaid','paid','refunded') DEFAULT 'unpaid',
     status ENUM('pending','active','checked_in','completed','canceled') DEFAULT 'pending',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id),

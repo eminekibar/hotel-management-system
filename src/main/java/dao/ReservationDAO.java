@@ -22,14 +22,15 @@ public class ReservationDAO {
     }
 
     public int create(Reservation reservation) {
-        String sql = "INSERT INTO reservations (customer_id, room_id, start_date, end_date, total_price, status) VALUES (?,?,?,?,?,?)";
+        String sql = "INSERT INTO reservations (customer_id, room_id, start_date, end_date, total_price, payment_status, status) VALUES (?,?,?,?,?,?,?)";
         try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, reservation.getCustomer().getId());
             ps.setInt(2, reservation.getRoom().getId());
             ps.setDate(3, Date.valueOf(reservation.getStartDate()));
             ps.setDate(4, Date.valueOf(reservation.getEndDate()));
             ps.setDouble(5, reservation.getTotalPrice());
-            ps.setString(6, reservation.getCurrentState().getName());
+            ps.setString(6, reservation.getPaymentStatus());
+            ps.setString(7, reservation.getCurrentState().getName());
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
@@ -181,8 +182,20 @@ public class ReservationDAO {
         reservation.setStartDate(startDate);
         reservation.setEndDate(endDate);
         reservation.setTotalPrice(rs.getDouble("total_price"));
+        reservation.setPaymentStatus(rs.getString("payment_status"));
         reservation.setState(stateFrom(rs.getString("status")));
         return reservation;
+    }
+
+    public void updatePaymentStatus(int reservationId, String paymentStatus) {
+        String sql = "UPDATE reservations SET payment_status=? WHERE reservation_id=?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, paymentStatus);
+            ps.setInt(2, reservationId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to update payment status", e);
+        }
     }
 
     private ReservationState stateFrom(String status) {

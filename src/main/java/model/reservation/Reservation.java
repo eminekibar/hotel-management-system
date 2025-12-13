@@ -14,10 +14,12 @@ public class Reservation {
     private LocalDate startDate;
     private LocalDate endDate;
     private double totalPrice;
+    private String paymentStatus;
     private ReservationState currentState;
 
     public Reservation() {
         this.currentState = new PendingState();
+        this.paymentStatus = "unpaid";
     }
 
     public int getReservationId() {
@@ -66,6 +68,14 @@ public class Reservation {
 
     public void setTotalPrice(double totalPrice) {
         this.totalPrice = totalPrice;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
     }
 
     public ReservationState getCurrentState() {
