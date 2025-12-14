@@ -87,7 +87,11 @@ public class StaffPanel extends JFrame {
     private void buildUi() {
         setLayout(new BorderLayout());
         JPanel header = new JPanel(new BorderLayout());
-        header.add(new JLabel("Logged in as: " + staff.getDisplayName()), BorderLayout.WEST);
+        String roleLabel = (staff.getRole() == null || staff.getRole().isBlank()) ? "Staff" : staff.getRole();
+        JLabel welcome = new JLabel("Welcome, " + staff.getDisplayName() + " (" + roleLabel + ")");
+        welcome.setFont(welcome.getFont().deriveFont(Font.BOLD, 16f));
+        welcome.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
+        header.add(welcome, BorderLayout.WEST);
         JButton logout = new JButton("Logout");
         logout.addActionListener(e -> logout());
         header.add(logout, BorderLayout.EAST);
@@ -100,6 +104,10 @@ public class StaffPanel extends JFrame {
         }
         tabs.addTab("Rooms", roomsPanel());
         tabs.addTab("Reservations", reservationsPanel());
+        int reservationsTabIndex = tabs.indexOfTab("Reservations");
+        if (reservationsTabIndex >= 0) {
+            tabs.setSelectedIndex(reservationsTabIndex);
+        }
         add(tabs, BorderLayout.CENTER);
     }
 
