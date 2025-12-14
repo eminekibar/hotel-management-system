@@ -13,9 +13,9 @@ public final class RoomFactory {
     public static Room createRoom(String type) {
         String normalized = type == null ? "" : type.trim().toLowerCase();
         return switch (normalized) {
-            case "standard", "single", "double" -> new StandardRoom();
+            case "standard"-> new StandardRoom();
             case "suite" -> new SuiteRoom();
-            case "family", "triple" -> new FamilyRoom();
+            case "family" -> new FamilyRoom();
             default -> new StandardRoom(); // fallback to avoid query failures on unknown types
         };
     }
