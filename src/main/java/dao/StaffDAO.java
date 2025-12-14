@@ -16,7 +16,7 @@ public class StaffDAO {
     }
 
     public int create(Staff staff) {
-        String sql = "INSERT INTO staff (username, first_name, last_name, email, national_id, password_hash, role) VALUES (?,?,?,?,?,?,?)";
+        String sql = "INSERT INTO staff (username, first_name, last_name, email, national_id, password_hash, role, is_active) VALUES (?,?,?,?,?,?,?,?)";
         try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, staff.getUsername());
             ps.setString(2, staff.getFirstName());
@@ -25,6 +25,7 @@ public class StaffDAO {
             ps.setString(5, staff.getNationalId());
             ps.setString(6, staff.getPasswordHash());
             ps.setString(7, staff.getRole());
+            ps.setBoolean(8, staff.isActive());
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
@@ -125,7 +126,7 @@ public class StaffDAO {
     }
 
     public void update(Staff staff) {
-        String sql = "UPDATE staff SET username=?, first_name=?, last_name=?, email=?, national_id=?, password_hash=?, role=? WHERE staff_id=?";
+        String sql = "UPDATE staff SET username=?, first_name=?, last_name=?, email=?, national_id=?, password_hash=?, role=?, is_active=? WHERE staff_id=?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, staff.getUsername());
             ps.setString(2, staff.getFirstName());
@@ -134,10 +135,35 @@ public class StaffDAO {
             ps.setString(5, staff.getNationalId());
             ps.setString(6, staff.getPasswordHash());
             ps.setString(7, staff.getRole());
-            ps.setInt(8, staff.getId());
+            ps.setBoolean(8, staff.isActive());
+            ps.setInt(9, staff.getId());
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Failed to update staff", e);
+        }
+    }
+
+    public void deactivate(int id) {
+        String sql = "UPDATE staff SET is_active = FALSE WHERE staff_id = ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to deactivate staff", e);
+        }
+    }
+
+    public boolean existsByUsernameOrEmailOrNationalId(String username, String email, String nationalId) {
+        String sql = "SELECT 1 FROM staff WHERE username = ? OR email = ? OR national_id = ? LIMIT 1";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, username);
+            ps.setString(2, email);
+            ps.setString(3, nationalId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to check staff uniqueness", e);
         }
     }
 
@@ -151,6 +177,7 @@ public class StaffDAO {
         staff.setNationalId(rs.getString("national_id"));
         staff.setPasswordHash(rs.getString("password_hash"));
         staff.setRole(rs.getString("role"));
+        staff.setActive(rs.getBoolean("is_active"));
         return staff;
     }
 }

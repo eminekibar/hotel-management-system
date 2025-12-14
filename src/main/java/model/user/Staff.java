@@ -3,6 +3,7 @@ package model.user;
 public class Staff extends BaseUser {
     private String role;
     private String nationalId;
+    private boolean active = true;
 
     public Staff() {
     }
@@ -31,6 +32,14 @@ public class Staff extends BaseUser {
 
     public void setNationalId(String nationalId) {
         this.nationalId = nationalId;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
     @Override

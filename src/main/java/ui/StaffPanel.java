@@ -7,6 +7,7 @@ import model.user.Staff;
 import service.CustomerService;
 import service.ReservationService;
 import service.RoomService;
+import service.StaffService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,10 +20,22 @@ public class StaffPanel extends JFrame {
     private final CustomerService customerService = new CustomerService();
     private final RoomService roomService = new RoomService();
     private final ReservationService reservationService = new ReservationService();
+    private final StaffService staffService = new StaffService();
 
     private final DefaultListModel<String> customerListModel = new DefaultListModel<>();
     private List<Customer> cachedCustomers;
     private final JTextField customerSearchField = new JTextField();
+
+    private final DefaultListModel<String> staffListModel = new DefaultListModel<>();
+    private List<Staff> cachedStaff;
+    private final JTextField staffSearchField = new JTextField();
+    private final JTextField staffUsernameField = new JTextField();
+    private final JTextField staffFirstNameField = new JTextField();
+    private final JTextField staffLastNameField = new JTextField();
+    private final JTextField staffEmailField = new JTextField();
+    private final JTextField staffNationalIdField = new JTextField();
+    private final JPasswordField staffPasswordField = new JPasswordField();
+    private final JComboBox<String> staffRoleBox = new JComboBox<>(new String[]{"reception", "manager", "admin"});
 
     private final DefaultListModel<String> roomListModel = new DefaultListModel<>();
     private List<Room> cachedRooms;
@@ -59,9 +72,16 @@ public class StaffPanel extends JFrame {
         setLocationRelativeTo(null);
         buildUi();
         refreshCustomers();
+        if (isAdmin()) {
+            refreshStaff();
+        }
         refreshRooms();
         refreshReservations();
         setVisible(true);
+    }
+
+    private boolean isAdmin() {
+        return staff.getUsername() != null && staff.getUsername().equalsIgnoreCase("admin");
     }
 
     private void buildUi() {
@@ -75,6 +95,9 @@ public class StaffPanel extends JFrame {
 
         JTabbedPane tabs = new JTabbedPane();
         tabs.addTab("Customers", customersPanel());
+        if (isAdmin()) {
+            tabs.addTab("Staff", staffPanel());
+        }
         tabs.addTab("Rooms", roomsPanel());
         tabs.addTab("Reservations", reservationsPanel());
         add(tabs, BorderLayout.CENTER);
@@ -93,16 +116,60 @@ public class StaffPanel extends JFrame {
         addCustomer.addActionListener(e -> openCustomerDialog());
         JButton details = new JButton("Details");
         details.addActionListener(e -> openCustomerDetails(list.getSelectedIndex()));
+        JButton deactivate = new JButton("Deactivate");
+        deactivate.addActionListener(e -> deactivateCustomer(list.getSelectedIndex()));
         JPanel buttons = new JPanel();
         buttons.add(search);
         buttons.add(addCustomer);
         buttons.add(details);
+        buttons.add(deactivate);
         top.add(buttons, BorderLayout.EAST);
         panel.add(top, BorderLayout.NORTH);
 
         JButton refresh = new JButton("Refresh");
         refresh.addActionListener(e -> refreshCustomers());
         panel.add(refresh, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JPanel staffPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        JList<String> list = new JList<>(staffListModel);
+        panel.add(new JScrollPane(list), BorderLayout.CENTER);
+
+        JPanel top = new JPanel(new BorderLayout(4, 4));
+        top.add(staffSearchField, BorderLayout.CENTER);
+        JButton search = new JButton("Search");
+        search.addActionListener(e -> refreshStaff());
+        JButton deactivate = new JButton("Deactivate");
+        deactivate.addActionListener(e -> deactivateStaff(list.getSelectedIndex()));
+        JPanel buttons = new JPanel();
+        buttons.add(search);
+        buttons.add(deactivate);
+        top.add(buttons, BorderLayout.EAST);
+        panel.add(top, BorderLayout.NORTH);
+
+        JPanel form = new JPanel(new GridLayout(0, 2, 4, 4));
+        form.setBorder(BorderFactory.createTitledBorder("Add Staff"));
+        form.add(new JLabel("Username"));
+        form.add(staffUsernameField);
+        form.add(new JLabel("First Name"));
+        form.add(staffFirstNameField);
+        form.add(new JLabel("Last Name"));
+        form.add(staffLastNameField);
+        form.add(new JLabel("Email"));
+        form.add(staffEmailField);
+        form.add(new JLabel("National ID"));
+        form.add(staffNationalIdField);
+        form.add(new JLabel("Password"));
+        form.add(staffPasswordField);
+        form.add(new JLabel("Role"));
+        form.add(staffRoleBox);
+        JButton addBtn = new JButton("Add Staff");
+        addBtn.addActionListener(e -> addStaff());
+        form.add(new JLabel(""));
+        form.add(addBtn);
+        panel.add(form, BorderLayout.SOUTH);
         return panel;
     }
 
@@ -212,7 +279,91 @@ public class StaffPanel extends JFrame {
         cachedCustomers = customerService.searchCustomers(customerSearchField.getText().trim());
         customerListModel.clear();
         for (Customer c : cachedCustomers) {
-            customerListModel.addElement(c.getId() + " | " + c.getDisplayName() + " | " + c.getUsername() + " | " + c.getEmail());
+            customerListModel.addElement(c.getId() + " | " + c.getDisplayName() + " | " + c.getUsername() + " | " + c.getEmail() + " | active=" + (c.isActive() ? "Y" : "N"));
+        }
+    }
+
+    private void deactivateCustomer(int index) {
+        if (index < 0 || cachedCustomers == null || index >= cachedCustomers.size()) {
+            JOptionPane.showMessageDialog(this, "Select a customer first");
+            return;
+        }
+        Customer customer = cachedCustomers.get(index);
+        if (!customer.isActive()) {
+            JOptionPane.showMessageDialog(this, "Customer is already inactive.");
+            return;
+        }
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Deactivate customer " + customer.getDisplayName() + "? Existing reservations stay active.",
+                "Confirm Deactivation", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
+        try {
+            customerService.deactivate(customer.getId());
+            JOptionPane.showMessageDialog(this, "Customer deactivated.");
+            refreshCustomers();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Failed to deactivate customer: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void refreshStaff() {
+        cachedStaff = staffService.searchStaff(staffSearchField.getText().trim());
+        staffListModel.clear();
+        for (Staff s : cachedStaff) {
+            staffListModel.addElement(s.getId() + " | " + s.getDisplayName() + " | " + s.getUsername() + " | role=" + s.getRole() + " | active=" + (s.isActive() ? "Y" : "N"));
+        }
+    }
+
+    private void addStaff() {
+        String username = staffUsernameField.getText().trim();
+        String firstName = staffFirstNameField.getText().trim();
+        String lastName = staffLastNameField.getText().trim();
+        String email = staffEmailField.getText().trim();
+        String nationalId = staffNationalIdField.getText().trim();
+        String password = new String(staffPasswordField.getPassword());
+        String role = (String) staffRoleBox.getSelectedItem();
+
+        try {
+            Staff created = staffService.register(username, firstName, lastName, email, nationalId, role, password);
+            JOptionPane.showMessageDialog(this, "Staff created: " + created.getUsername());
+            refreshStaff();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Failed to create staff: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void deactivateStaff(int index) {
+        if (!isAdmin()) {
+            JOptionPane.showMessageDialog(this, "Only admin can deactivate staff.");
+            return;
+        }
+        if (index < 0 || cachedStaff == null || index >= cachedStaff.size()) {
+            JOptionPane.showMessageDialog(this, "Select a staff first");
+            return;
+        }
+        Staff target = cachedStaff.get(index);
+        if (target.getUsername() != null && target.getUsername().equalsIgnoreCase("admin")) {
+            JOptionPane.showMessageDialog(this, "Admin account cannot be deactivated.");
+            return;
+        }
+        if (!target.isActive()) {
+            JOptionPane.showMessageDialog(this, "Staff is already inactive.");
+            return;
+        }
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Deactivate staff " + target.getDisplayName() + "?",
+                "Confirm Deactivation", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
+        try {
+            staffService.deactivate(target.getId());
+            JOptionPane.showMessageDialog(this, "Staff deactivated.");
+            refreshStaff();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Failed to deactivate staff: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 

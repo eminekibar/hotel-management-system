@@ -26,7 +26,7 @@ public class AuthService {
 
     public Staff loginStaff(String identifier, String rawPassword) {
         Staff staff = staffDAO.findByIdentifier(identifier);
-        if (staff != null && HashUtil.isPasswordMatch(rawPassword, staff.getPasswordHash())) {
+        if (staff != null && staff.isActive() && HashUtil.isPasswordMatch(rawPassword, staff.getPasswordHash())) {
             return staff;
         }
         return null;
