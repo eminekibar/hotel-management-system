@@ -14,7 +14,6 @@ import observer.NotificationService;
 import observer.StaffNotificationObserver;
 import strategy.DefaultPricingStrategy;
 import strategy.PricingStrategy;
-import state.ActiveState;
 import state.PendingState;
 
 import java.time.LocalDate;
