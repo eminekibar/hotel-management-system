@@ -253,17 +253,17 @@ public class CustomerPanel extends JFrame {
 
     private void deleteAccount() {
         int confirm = JOptionPane.showConfirmDialog(this,
-                "Are you sure you want to delete your account?\nExisting reservations will stay active.",
-                "Confirm Delete", JOptionPane.YES_NO_OPTION);
+                "Are you sure you want to deactivate your account?\nExisting reservations will stay active.",
+                "Confirm Deactivation", JOptionPane.YES_NO_OPTION);
         if (confirm != JOptionPane.YES_OPTION) {
             return;
         }
         try {
             customerService.deleteAccount(customer.getId());
-            JOptionPane.showMessageDialog(this, "Account deleted. Existing reservations remain active.");
+            JOptionPane.showMessageDialog(this, "Account deactivated. Existing reservations remain active.");
             logout();
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Failed to delete account: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Failed to deactivate account: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

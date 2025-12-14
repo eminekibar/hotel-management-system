@@ -169,12 +169,11 @@ public class CustomerDAO {
     }
 
     public void deleteAccount(int id) {
-        String sql = "DELETE customers WHERE customer_id = ?";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, id);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to delete customer account", e);
+        // Soft delete: keep historical links (reservations) and only deactivate the account.
+        try {
+            deactivate(id);
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Failed to deactivate customer account", e);
         }
     }
 
