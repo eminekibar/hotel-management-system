@@ -496,33 +496,86 @@ public class StaffPanel extends JFrame {
     }
 
     private JPanel createReservationPanel() {
-        JPanel createPanel = new JPanel(new GridLayout(0, 2, 4, 4));
-        createPanel.setBorder(BorderFactory.createTitledBorder("Create Reservation"));
-        createPanel.add(new JLabel("Customer (username/email/TC)"));
-        createPanel.add(resCustomerIdentifierField);
-        createPanel.add(new JLabel("Selected"));
-        createPanel.add(selectedCustomerLabel);
+        JPanel wrapper = new JPanel(new BorderLayout(8, 8));
+        wrapper.setBorder(BorderFactory.createTitledBorder("Create Reservation"));
+
+        JPanel form = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(4, 6, 4, 6);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+
+        form.add(new JLabel("Customer (username/email/TC)"), gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        form.add(resCustomerIdentifierField, gbc);
+
+        gbc.gridy++;
+        gbc.gridx = 0;
+        gbc.weightx = 0;
+        form.add(new JLabel("Selected"), gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        form.add(selectedCustomerLabel, gbc);
+
+        gbc.gridy++;
+        gbc.gridx = 0;
+        gbc.weightx = 0;
         JButton loadCustomerBtn = new JButton("Load Customer");
         loadCustomerBtn.addActionListener(e -> loadCustomerForReservation());
-        createPanel.add(loadCustomerBtn);
-        createPanel.add(new JLabel(""));
-        createPanel.add(new JLabel("Start Date"));
-        createPanel.add(resStartDateField);
-        createPanel.add(new JLabel("End Date"));
-        createPanel.add(resEndDateField);
-        createPanel.add(new JLabel("Room Type"));
-        createPanel.add(resRoomTypeBox);
-        createPanel.add(new JLabel("Capacity"));
-        createPanel.add(resCapacitySpinner);
+        gbc.gridwidth = 2;
+        form.add(loadCustomerBtn, gbc);
+        gbc.gridwidth = 1;
+
+        gbc.gridy++;
+        gbc.gridx = 0;
+        form.add(new JLabel("Start Date"), gbc);
+        gbc.gridx = 1;
+        form.add(resStartDateField, gbc);
+
+        gbc.gridy++;
+        gbc.gridx = 0;
+        form.add(new JLabel("End Date"), gbc);
+        gbc.gridx = 1;
+        form.add(resEndDateField, gbc);
+
+        gbc.gridy++;
+        gbc.gridx = 0;
+        form.add(new JLabel("Room Type"), gbc);
+        gbc.gridx = 1;
+        form.add(resRoomTypeBox, gbc);
+
+        gbc.gridy++;
+        gbc.gridx = 0;
+        form.add(new JLabel("Capacity"), gbc);
+        gbc.gridx = 1;
+        form.add(resCapacitySpinner, gbc);
+
+        gbc.gridy++;
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
         JButton searchRoomsBtn = new JButton("Search Rooms");
         searchRoomsBtn.addActionListener(e -> searchRoomsForReservation());
-        createPanel.add(searchRoomsBtn);
+        form.add(searchRoomsBtn, gbc);
+        gbc.gridwidth = 1;
+
         JList<String> searchRoomsList = new JList<>(resSearchRoomsModel);
-        createPanel.add(new JScrollPane(searchRoomsList));
+        searchRoomsList.setVisibleRowCount(6);
+        JScrollPane roomsScroll = new JScrollPane(searchRoomsList);
+        roomsScroll.setBorder(BorderFactory.createTitledBorder("Available Rooms"));
+
         JButton createReservationBtn = new JButton("Create Reservation");
         createReservationBtn.addActionListener(e -> createReservation(searchRoomsList.getSelectedIndex()));
-        createPanel.add(createReservationBtn);
-        return createPanel;
+
+        JPanel bottom = new JPanel(new BorderLayout(6, 6));
+        bottom.add(roomsScroll, BorderLayout.CENTER);
+        bottom.add(createReservationBtn, BorderLayout.SOUTH);
+
+        wrapper.add(form, BorderLayout.NORTH);
+        wrapper.add(bottom, BorderLayout.CENTER);
+        return wrapper;
     }
 
     private void refreshCustomers() {
