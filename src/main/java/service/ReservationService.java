@@ -4,9 +4,11 @@ import dao.NotificationDAO;
 import dao.ReservationActionDAO;
 import dao.ReservationDAO;
 import dao.RoomDAO;
+import dao.StaffDAO;
 import model.reservation.Reservation;
 import model.room.Room;
 import model.user.Customer;
+import model.user.Staff;
 import observer.CustomerNotificationObserver;
 import observer.NotificationService;
 import observer.StaffNotificationObserver;
@@ -17,7 +19,9 @@ import state.PendingState;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ReservationService {
 
@@ -25,6 +29,7 @@ public class ReservationService {
     private final ReservationActionDAO actionDAO;
     private final NotificationDAO notificationDAO;
     private final RoomDAO roomDAO;
+    private final StaffDAO staffDAO;
     private PricingStrategy pricingStrategy;
 
     public ReservationService() {
@@ -32,6 +37,7 @@ public class ReservationService {
         this.actionDAO = new ReservationActionDAO();
         this.notificationDAO = new NotificationDAO();
         this.roomDAO = new RoomDAO();
+        this.staffDAO = new StaffDAO();
         this.pricingStrategy = new DefaultPricingStrategy();
     }
 
@@ -40,6 +46,10 @@ public class ReservationService {
     }
 
     public Reservation createReservation(Customer customer, Room room, LocalDate start, LocalDate end) {
+        return createReservation(customer, room, start, end, null);
+    }
+
+    public Reservation createReservation(Customer customer, Room room, LocalDate start, LocalDate end, Integer staffId) {
         if (customer == null || room == null) {
             throw new IllegalArgumentException("Customer and room are required");
         }
@@ -68,7 +78,9 @@ public class ReservationService {
 
         reservationDAO.create(reservation);
         roomDAO.updateStatus(room.getId(), "reserved");
-        notifyUsers(reservation, 0, "Reservation created: " + reservation.getReservationId());
+        String actor = staffId != null ? describeStaff(staffId) : describeCustomer(customer);
+        String message = "Created by " + actor + " • " + reservationSummary(reservation);
+        notifyUsers(reservation, staffId, message, true);
         return reservation;
     }
 
@@ -100,7 +112,7 @@ public class ReservationService {
         persistState(reservation);
         actionDAO.logCheckIn(reservationId, staffId);
         roomDAO.updateStatus(reservation.getRoom().getId(), "occupied");
-        notifyUsers(reservation, staffId, "Check-in completed: " + reservationId);
+        notifyUsers(reservation, staffId, "Check-in by " + describeStaff(staffId) + " • " + reservationSummary(reservation), false);
     }
 
     public void checkOut(int reservationId, int staffId) {
@@ -114,7 +126,7 @@ public class ReservationService {
         reservationDAO.updatePaymentStatus(reservationId, "paid");
         actionDAO.logCheckOut(reservationId, staffId);
         roomDAO.updateStatus(reservation.getRoom().getId(), "available");
-        notifyUsers(reservation, staffId, "Check-out completed: " + reservationId);
+        notifyUsers(reservation, staffId, "Check-out by " + describeStaff(staffId) + " • " + reservationSummary(reservation), false);
     }
 
     public void markPaid(int reservationId, int staffId) {
@@ -126,7 +138,7 @@ public class ReservationService {
             return;
         }
         reservationDAO.updatePaymentStatus(reservationId, "paid");
-        notifyUsers(reservation, staffId, "Payment marked as paid for reservation " + reservationId);
+        notifyUsers(reservation, staffId, "Payment marked PAID by " + describeStaff(staffId) + " • " + reservationSummary(reservation), false);
     }
 
     public void refund(int reservationId, int staffId) {
@@ -135,7 +147,7 @@ public class ReservationService {
             throw new IllegalArgumentException("Reservation not found.");
         }
         reservationDAO.updatePaymentStatus(reservationId, "refunded");
-        notifyUsers(reservation, staffId, "Payment refunded for reservation " + reservationId);
+        notifyUsers(reservation, staffId, "Payment REFUNDED by " + describeStaff(staffId) + " • " + reservationSummary(reservation), false);
     }
 
     public List<Reservation> listReservations() {
@@ -162,7 +174,8 @@ public class ReservationService {
         }
         actionDAO.logCancel(reservation.getReservationId(), staffId);
         roomDAO.updateStatus(reservation.getRoom().getId(), "available");
-        notifyUsers(reservation, staffId == null ? 0 : staffId, "Reservation canceled: " + reservation.getReservationId());
+        String actor = staffId == null ? describeCustomer(reservation.getCustomer()) : describeStaff(staffId);
+        notifyUsers(reservation, staffId == null ? 0 : staffId, "Canceled by " + actor + " • " + reservationSummary(reservation), false);
     }
 
     private void ensureCancelable(Reservation reservation) {
@@ -193,12 +206,68 @@ public class ReservationService {
         reservationDAO.updateStatus(reservation.getReservationId(), reservation.getCurrentState().getName());
     }
 
-    private void notifyUsers(Reservation reservation, int staffId, String message) {
+    private void notifyUsers(Reservation reservation, Integer staffId, String message, boolean broadcastStaff) {
         NotificationService notifier = new NotificationService();
         notifier.registerObserver(new CustomerNotificationObserver(reservation.getCustomer().getId(), notificationDAO));
-        if (staffId > 0) {
-            notifier.registerObserver(new StaffNotificationObserver(staffId, notificationDAO));
+        Set<Integer> staffTargets = new HashSet<>();
+        if (broadcastStaff || (staffId != null && staffId > 0)) {
+            for (Staff s : staffDAO.findAll()) {
+                if (!s.isActive()) {
+                    continue;
+                }
+                if (!broadcastStaff && (staffId == null || s.getId() != staffId)) {
+                    continue;
+                }
+                staffTargets.add(s.getId());
+            }
+        }
+        if (staffId != null && staffId > 0) {
+            staffTargets.add(staffId);
+        }
+        for (Staff s : staffDAO.findAll()) {
+            if (s.isActive() && "admin".equalsIgnoreCase(s.getRole())) {
+                staffTargets.add(s.getId());
+            }
+        }
+        for (Integer id : staffTargets) {
+            notifier.registerObserver(new StaffNotificationObserver(id, notificationDAO));
         }
         notifier.notifyAll(message);
+    }
+
+    private String describeStaff(Integer staffId) {
+        if (staffId == null || staffId <= 0) {
+            return "staff";
+        }
+        Staff staff = staffDAO.findById(staffId);
+        if (staff == null) {
+            return "staff#" + staffId;
+        }
+        String name = staff.getDisplayName();
+        if (name == null || name.isBlank()) {
+            name = staff.getUsername();
+        }
+        return name == null || name.isBlank() ? "staff#" + staffId : name;
+    }
+
+    private String describeCustomer(Customer customer) {
+        if (customer == null) {
+            return "customer";
+        }
+        String name = customer.getDisplayName();
+        if (name == null || name.isBlank()) {
+            name = customer.getUsername();
+        }
+        if (name == null || name.isBlank()) {
+            name = "customer#" + customer.getId();
+        }
+        return name;
+    }
+
+    private String reservationSummary(Reservation reservation) {
+        String room = reservation.getRoom() == null ? "-" : "room " + reservation.getRoom().getRoomNumber() + " (" + reservation.getRoom().getType() + ")";
+        String dates = reservation.getStartDate() + " → " + reservation.getEndDate();
+        String customer = describeCustomer(reservation.getCustomer());
+        return "Reservation #" + reservation.getReservationId() + " • " + room + " • " + dates + " • customer " + customer;
     }
 }

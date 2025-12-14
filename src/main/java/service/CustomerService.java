@@ -2,7 +2,10 @@ package service;
 
 import builder.CustomerBuilder;
 import dao.CustomerDAO;
+import dao.NotificationDAO;
+import dao.StaffDAO;
 import model.user.Customer;
+import model.user.Staff;
 import util.HashUtil;
 
 import java.util.regex.Pattern;
@@ -10,11 +13,15 @@ import java.util.regex.Pattern;
 public class CustomerService {
 
     private final CustomerDAO customerDAO;
+    private final NotificationDAO notificationDAO;
+    private final StaffDAO staffDAO;
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
     private static final Pattern USERNAME_PATTERN = Pattern.compile("^[A-Za-z0-9_.-]{3,20}$");
 
     public CustomerService() {
         this.customerDAO = new CustomerDAO();
+        this.notificationDAO = new NotificationDAO();
+        this.staffDAO = new StaffDAO();
     }
 
     public Customer register(String username, String firstName, String lastName, String email, String phone, String nationalId, String rawPassword) {
@@ -56,6 +63,7 @@ public class CustomerService {
 
     public void deleteAccount(int id) {
         customerDAO.deleteAccount(id);
+        notifyAdmins("Customer #" + id + " account deleted");
     }
 
     public Customer findByIdentifier(String identifier) {
@@ -112,5 +120,13 @@ public class CustomerService {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private void notifyAdmins(String message) {
+        for (Staff s : staffDAO.findAll()) {
+            if (s.isActive() && "admin".equalsIgnoreCase(s.getRole())) {
+                notificationDAO.create("staff", s.getId(), message);
+            }
+        }
     }
 }

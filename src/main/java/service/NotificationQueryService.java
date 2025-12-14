@@ -21,6 +21,14 @@ public class NotificationQueryService {
         notificationDAO.markAsRead(notificationId);
     }
 
+    public List<Notification> listAll() {
+        return notificationDAO.findAll();
+    }
+
+    public void markAllAsReadAll() {
+        notificationDAO.markAllAsRead();
+    }
+
     public void markAllAsReadForStaff(int staffId) {
         notificationDAO.markAllAsRead("staff", staffId);
     }

@@ -50,6 +50,20 @@ public class NotificationDAO {
         return notifications;
     }
 
+    public List<Notification> findAll() {
+        List<Notification> notifications = new ArrayList<>();
+        String sql = "SELECT * FROM notifications ORDER BY created_at DESC";
+        try (PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                notifications.add(mapRow(rs));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to list all notifications", e);
+        }
+        return notifications;
+    }
+
     public void markAsRead(int notificationId) {
         String sql = "UPDATE notifications SET is_read=1 WHERE notification_id=?";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -68,6 +82,15 @@ public class NotificationDAO {
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Failed to mark notifications as read", e);
+        }
+    }
+
+    public void markAllAsRead() {
+        String sql = "UPDATE notifications SET is_read=1";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to mark all notifications as read", e);
         }
     }
 

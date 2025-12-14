@@ -96,6 +96,7 @@ public class StaffPanel extends JFrame {
     private final DefaultListModel<String> notificationListModel = new DefaultListModel<>();
     private List<Notification> cachedNotifications;
     private final JList<String> notificationList = new JList<>(notificationListModel);
+    private List<List<Notification>> adminGroupedNotifications;
 
     public StaffPanel(Staff staff) {
         this.staff = staff;
@@ -550,10 +551,16 @@ public class StaffPanel extends JFrame {
 
     private void refreshNotifications() {
         try {
-            cachedNotifications = notificationQueryService.listForStaff(staff.getId());
-            notificationListModel.clear();
-            for (Notification n : cachedNotifications) {
-                notificationListModel.addElement(formatNotification(n));
+            if (isAdmin()) {
+                cachedNotifications = notificationQueryService.listAll();
+                renderAdminNotifications(cachedNotifications);
+            } else {
+                cachedNotifications = notificationQueryService.listForStaff(staff.getId());
+                adminGroupedNotifications = null;
+                notificationListModel.clear();
+                for (Notification n : cachedNotifications) {
+                    notificationListModel.addElement(formatNotification(n));
+                }
             }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Failed to load notifications: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -719,6 +726,21 @@ public class StaffPanel extends JFrame {
     }
 
     private void markNotificationRead(int index) {
+        if (isAdmin() && adminGroupedNotifications != null) {
+            if (index < 0 || index >= adminGroupedNotifications.size()) {
+                JOptionPane.showMessageDialog(this, "Select a notification first");
+                return;
+            }
+            try {
+                for (Notification n : adminGroupedNotifications.get(index)) {
+                    notificationQueryService.markAsRead(n.getId());
+                }
+                refreshNotifications();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Failed to mark as read: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+            return;
+        }
         if (index < 0 || cachedNotifications == null || index >= cachedNotifications.size()) {
             JOptionPane.showMessageDialog(this, "Select a notification first");
             return;
@@ -734,7 +756,11 @@ public class StaffPanel extends JFrame {
 
     private void markAllNotificationsRead() {
         try {
-            notificationQueryService.markAllAsReadForStaff(staff.getId());
+            if (isAdmin()) {
+                notificationQueryService.markAllAsReadAll();
+            } else {
+                notificationQueryService.markAllAsReadForStaff(staff.getId());
+            }
             refreshNotifications();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Failed to mark all as read: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -897,7 +923,7 @@ public class StaffPanel extends JFrame {
             Room room = info.getRoom();
             LocalDate start = LocalDate.parse(resStartDateField.getText().trim());
             LocalDate end = LocalDate.parse(resEndDateField.getText().trim());
-            Reservation reservation = reservationService.createReservation(selectedCustomerForReservation, room, start, end);
+            Reservation reservation = reservationService.createReservation(selectedCustomerForReservation, room, start, end, staff.getId());
             JOptionPane.showMessageDialog(this, "Reservation created: " + reservation.getReservationId());
             refreshReservations();
             refreshRooms();
@@ -1049,7 +1075,41 @@ public class StaffPanel extends JFrame {
 
     private String formatNotification(Notification n) {
         String time = n.getCreatedAt() == null ? "-" : LocalDateTime.ofInstant(n.getCreatedAt(), ZoneId.systemDefault()).format(notificationTimeFormatter);
+        if (isAdmin()) {
+            String target = n.getUserType() == null ? "-" : n.getUserType() + "#" + n.getUserId();
+            return n.getId() + " | " + time + " | " + target + " | " + safe(n.getMessage()) + " | read:" + (n.isRead() ? "Y" : "N");
+        }
         return n.getId() + " | " + time + " | " + safe(n.getMessage()) + " | read:" + (n.isRead() ? "Y" : "N");
+    }
+
+    private void renderAdminNotifications(List<Notification> notifications) {
+        adminGroupedNotifications = new ArrayList<>();
+        notificationListModel.clear();
+        if (notifications == null || notifications.isEmpty()) {
+            return;
+        }
+        java.util.Map<String, List<Notification>> groups = new java.util.LinkedHashMap<>();
+        for (Notification n : notifications) {
+            String timeKey = n.getCreatedAt() == null ? "-" : String.valueOf(n.getCreatedAt().getEpochSecond());
+            String key = n.getMessage() + "|" + timeKey;
+            groups.computeIfAbsent(key, k -> new ArrayList<>()).add(n);
+        }
+        int i = 1;
+        for (List<Notification> group : groups.values()) {
+            adminGroupedNotifications.add(group);
+            Notification first = group.get(0);
+            boolean anyUnread = group.stream().anyMatch(n -> !n.isRead());
+            String time = first.getCreatedAt() == null ? "-" : LocalDateTime.ofInstant(first.getCreatedAt(), ZoneId.systemDefault()).format(notificationTimeFormatter);
+            String targets = group.stream()
+                    .map(n -> (n.getUserType() == null ? "-" : n.getUserType()) + "#" + n.getUserId())
+                    .distinct()
+                    .sorted()
+                    .reduce((a, b) -> a + ", " + b)
+                    .orElse("-");
+            String formatted = "G" + i + " | " + time + " | targets: " + targets + " | " + safe(first.getMessage()) + " | read:" + (anyUnread ? "N" : "Y");
+            notificationListModel.addElement(formatted);
+            i++;
+        }
     }
 
     private String formatStaff(Staff s) {
@@ -1222,9 +1282,10 @@ public class StaffPanel extends JFrame {
     private ListCellRenderer<String> createNotificationRenderer() {
         return (list, value, index, isSelected, cellHasFocus) -> {
             String[] parts = value == null ? new String[0] : value.split("\\|");
-            String time = part(parts, 1);
-            String message = part(parts, 2);
-            String read = part(parts, 3).replace("read:", "").trim();
+            String time = parts.length > 1 ? part(parts, 1) : "";
+            String target = parts.length > 4 ? part(parts, 2) : "";
+            String message = parts.length > 3 ? part(parts, parts.length > 4 ? 3 : 2) : "";
+            String read = part(parts, parts.length - 1).replace("read:", "").trim();
             boolean isRead = read.equalsIgnoreCase("y") || read.equalsIgnoreCase("yes") || read.equalsIgnoreCase("true") || read.equalsIgnoreCase("1");
 
             JPanel row = new JPanel(new BorderLayout(6, 4));
@@ -1242,6 +1303,9 @@ public class StaffPanel extends JFrame {
             JLabel timeLabel = new JLabel(time);
             timeLabel.setForeground(isSelected ? list.getSelectionForeground() : new Color(70, 70, 70));
 
+            JLabel targetLabel = new JLabel(target);
+            targetLabel.setForeground(isSelected ? list.getSelectionForeground() : new Color(110, 110, 110));
+
             JLabel readLabel = new JLabel(isRead ? "Read" : "Unread");
             Color statusColor = isRead ? new Color(110, 110, 110) : new Color(0, 115, 86);
             readLabel.setForeground(isSelected ? list.getSelectionForeground() : statusColor);
@@ -1254,6 +1318,10 @@ public class StaffPanel extends JFrame {
             JPanel bottom = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
             bottom.setOpaque(false);
             bottom.add(timeLabel);
+            if (isAdmin() && !target.isBlank()) {
+                bottom.add(new JLabel("\u2022"));
+                bottom.add(targetLabel);
+            }
 
             row.add(top, BorderLayout.NORTH);
             row.add(bottom, BorderLayout.CENTER);

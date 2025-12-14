@@ -278,10 +278,13 @@ public class CustomerPanel extends JFrame {
             String type = (String) roomTypeBox.getSelectedItem();
             int capacity = (Integer) capacitySpinner.getValue();
             java.util.List<model.room.RoomAvailabilityInfo> availabilityList = roomService.searchWithAvailability(type, capacity, start, end);
-            lastAvailabilityResults = availabilityList;
+            java.util.List<model.room.RoomAvailabilityInfo> bookable = new java.util.ArrayList<>();
             searchResultsModel.clear();
-            for (int i = 0; i < availabilityList.size(); i++) {
-                var info = availabilityList.get(i);
+            for (model.room.RoomAvailabilityInfo info : availabilityList) {
+                if (!info.isBookable()) {
+                    continue;
+                }
+                bookable.add(info);
                 Room room = info.getRoom();
                 searchResultsModel.addElement(
                         room.getRoomNumber() + " | " + room.getType() +
@@ -289,6 +292,10 @@ public class CustomerPanel extends JFrame {
                                 " | $" + room.getPricePerNight() +
                                 " | " + info.getAvailabilityLabel()
                 );
+            }
+            lastAvailabilityResults = bookable;
+            if (bookable.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "No rooms available for the selected dates and filters.");
             }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Invalid search input: " + ex.getMessage());
