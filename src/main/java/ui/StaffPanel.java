@@ -88,7 +88,10 @@ public class StaffPanel extends JFrame {
         setLayout(new BorderLayout());
         JPanel header = new JPanel(new BorderLayout());
         String roleLabel = (staff.getRole() == null || staff.getRole().isBlank()) ? "Staff" : staff.getRole();
-        JLabel welcome = new JLabel("Welcome, " + staff.getDisplayName() + " (" + roleLabel + ")");
+        String displayName = staff.getDisplayName() == null ? "" : staff.getDisplayName();
+        boolean roleAlreadyInName = displayName.toLowerCase().contains(roleLabel.toLowerCase());
+        String welcomeText = "Welcome, " + displayName + (roleAlreadyInName ? "" : " (" + roleLabel + ")");
+        JLabel welcome = new JLabel(welcomeText);
         welcome.setFont(welcome.getFont().deriveFont(Font.BOLD, 16f));
         welcome.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
         header.add(welcome, BorderLayout.WEST);
@@ -213,20 +216,28 @@ public class StaffPanel extends JFrame {
 
     private JPanel manageReservationsPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        reservationList.setCellRenderer(createStaffReservationRenderer());
+        reservationList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         panel.add(new JScrollPane(reservationList), BorderLayout.CENTER);
 
         JPanel buttons = new JPanel();
-        JButton checkIn = new JButton("Check-in");
+        JButton checkIn = new JButton("Guest Arrived");
+        checkIn.setToolTipText("Mark guest as checked-in");
         checkIn.addActionListener(e -> performOnSelected(reservationList.getSelectedIndex(), "checkin"));
-        JButton checkOut = new JButton("Check-out");
+        JButton checkOut = new JButton("Guest Left");
+        checkOut.setToolTipText("Mark guest as checked-out");
         checkOut.addActionListener(e -> performOnSelected(reservationList.getSelectedIndex(), "checkout"));
-        JButton cancel = new JButton("Cancel");
+        JButton cancel = new JButton("Cancel Booking");
+        cancel.setToolTipText("Cancel the reservation");
         cancel.addActionListener(e -> performOnSelected(reservationList.getSelectedIndex(), "cancel"));
-        JButton markPaid = new JButton("Mark Paid");
+        JButton markPaid = new JButton("Set Paid");
+        markPaid.setToolTipText("Flag payment as received");
         markPaid.addActionListener(e -> performOnSelected(reservationList.getSelectedIndex(), "markPaid"));
-        JButton refund = new JButton("Refund");
+        JButton refund = new JButton("Issue Refund");
+        refund.setToolTipText("Record a refund for this booking");
         refund.addActionListener(e -> performOnSelected(reservationList.getSelectedIndex(), "refund"));
-        JButton refresh = new JButton("Refresh");
+        JButton refresh = new JButton("Refresh List");
+        refresh.setToolTipText("Reload reservations");
         refresh.addActionListener(e -> refreshReservations());
         buttons.add(checkIn);
         buttons.add(checkOut);
@@ -511,6 +522,75 @@ public class StaffPanel extends JFrame {
     private void logout() {
         dispose();
         new LoginForm();
+    }
+
+    private ListCellRenderer<String> createStaffReservationRenderer() {
+        return (list, value, index, isSelected, cellHasFocus) -> {
+            String[] parts = value == null ? new String[0] : value.split("\\|");
+            String id = part(parts, 0);
+            String customer = part(parts, 1);
+            String room = part(parts, 2);
+            String dates = part(parts, 3);
+            String status = part(parts, 4).replace("status:", "").trim();
+            String payment = part(parts, 5).replace("payment:", "").trim();
+
+            JPanel row = new JPanel(new BorderLayout(6, 4));
+            row.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(235, 235, 235)),
+                    BorderFactory.createEmptyBorder(8, 10, 8, 10)
+            ));
+            row.setOpaque(true);
+            row.setBackground(isSelected ? list.getSelectionBackground() : list.getBackground());
+
+            JLabel title = new JLabel("Reservation #" + id + (room.isBlank() ? "" : " \u2022 " + room.trim()));
+            title.setFont(list.getFont().deriveFont(Font.BOLD));
+            title.setForeground(isSelected ? list.getSelectionForeground() : list.getForeground());
+
+            JLabel customerLabel = new JLabel(customer);
+            customerLabel.setForeground(isSelected ? list.getSelectionForeground() : new Color(70, 70, 70));
+
+            JLabel datesLabel = new JLabel(dates);
+            datesLabel.setForeground(isSelected ? list.getSelectionForeground() : new Color(70, 70, 70));
+
+            JLabel statusLabel = new JLabel("Status: " + status);
+            String statusLower = status.toLowerCase();
+            Color statusColor = statusLower.contains("cancel") ? new Color(150, 33, 33)
+                    : statusLower.contains("pending") ? new Color(181, 128, 30)
+                    : statusLower.contains("check") ? new Color(0, 115, 86)
+                    : new Color(0, 115, 86);
+            statusLabel.setForeground(isSelected ? list.getSelectionForeground() : statusColor);
+
+            JLabel paymentLabel = new JLabel("Payment: " + payment);
+            String paymentLower = payment.toLowerCase();
+            Color paymentColor = paymentLower.contains("paid") ? new Color(0, 115, 86)
+                    : paymentLower.contains("refund") ? new Color(31, 90, 150)
+                    : new Color(181, 128, 30);
+            paymentLabel.setForeground(isSelected ? list.getSelectionForeground() : paymentColor);
+
+            JPanel topLine = new JPanel(new BorderLayout());
+            topLine.setOpaque(false);
+            topLine.add(title, BorderLayout.WEST);
+
+            JPanel middleLine = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+            middleLine.setOpaque(false);
+            middleLine.add(customerLabel);
+            middleLine.add(new JLabel("\u2022"));
+            middleLine.add(datesLabel);
+
+            JPanel bottomLine = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+            bottomLine.setOpaque(false);
+            bottomLine.add(statusLabel);
+            bottomLine.add(paymentLabel);
+
+            row.add(topLine, BorderLayout.NORTH);
+            row.add(middleLine, BorderLayout.CENTER);
+            row.add(bottomLine, BorderLayout.SOUTH);
+            return row;
+        };
+    }
+
+    private String part(String[] parts, int index) {
+        return index < parts.length ? parts[index].trim() : "";
     }
 
     private void loadCustomerForReservation() {
