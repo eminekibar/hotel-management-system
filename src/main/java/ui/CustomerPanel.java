@@ -1,16 +1,20 @@
 package ui;
 
 import model.reservation.Reservation;
+import model.Notification;
 import model.room.RoomAvailabilityInfo;
 import model.room.Room;
 import model.user.Customer;
 import service.CustomerService;
+import service.NotificationQueryService;
 import service.ReservationService;
 import service.RoomService;
 
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.List;
@@ -23,6 +27,7 @@ public class CustomerPanel extends JFrame {
     private final CustomerService customerService = new CustomerService();
     private final RoomService roomService = new RoomService();
     private final ReservationService reservationService = new ReservationService();
+    private final NotificationQueryService notificationQueryService = new NotificationQueryService();
 
     private final JTextField emailField = new JTextField();
     private final JTextField phoneField = new JTextField();
@@ -39,6 +44,11 @@ public class CustomerPanel extends JFrame {
     private final JList<String> reservationList = new JList<>(reservationListModel);
     private final DateTimeFormatter displayFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
     private final DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy");
+    private final DateTimeFormatter notificationFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+    private final DefaultListModel<String> notificationListModel = new DefaultListModel<>();
+    private List<Notification> cachedNotifications;
+    private final JList<String> notificationList = new JList<>(notificationListModel);
 
     public CustomerPanel(Customer customer) {
         this.customer = customer;
@@ -49,6 +59,7 @@ public class CustomerPanel extends JFrame {
         buildUi();
         refreshReservations();
         refreshHistory();
+        refreshNotifications();
         setDefaultDates();
         setVisible(true);
     }
@@ -70,6 +81,7 @@ public class CustomerPanel extends JFrame {
         tabs.addTab("My Reservations", reservationsPanel());
         tabs.addTab("History", historyPanel());
         tabs.addTab("Profile", profilePanel());
+        tabs.addTab("Notifications", notificationsPanel());
         tabs.setSelectedIndex(0);
         add(tabs, BorderLayout.CENTER);
     }
@@ -194,6 +206,61 @@ public class CustomerPanel extends JFrame {
         JButton refresh = new JButton("Refresh");
         refresh.addActionListener(e -> refreshHistory());
         panel.add(refresh, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private void refreshNotifications() {
+        try {
+            cachedNotifications = notificationQueryService.listForCustomer(customer.getId());
+            notificationListModel.clear();
+            for (Notification n : cachedNotifications) {
+                notificationListModel.addElement(formatNotification(n));
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Failed to load notifications: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void markNotificationRead(int index) {
+        if (index < 0 || cachedNotifications == null || index >= cachedNotifications.size()) {
+            JOptionPane.showMessageDialog(this, "Select a notification first");
+            return;
+        }
+        Notification notification = cachedNotifications.get(index);
+        try {
+            notificationQueryService.markAsRead(notification.getId());
+            refreshNotifications();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Failed to mark as read: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void markAllNotificationsRead() {
+        try {
+            notificationQueryService.markAllAsReadForCustomer(customer.getId());
+            refreshNotifications();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Failed to mark all as read: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private JPanel notificationsPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        notificationList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        notificationList.setCellRenderer(createNotificationRenderer());
+        panel.add(new JScrollPane(notificationList), BorderLayout.CENTER);
+
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
+        JButton markRead = new JButton("Mark Read");
+        markRead.addActionListener(e -> markNotificationRead(notificationList.getSelectedIndex()));
+        JButton markAll = new JButton("Mark All Read");
+        markAll.addActionListener(e -> markAllNotificationsRead());
+        JButton refresh = new JButton("Refresh");
+        refresh.addActionListener(e -> refreshNotifications());
+        actions.add(markRead);
+        actions.add(markAll);
+        actions.add(refresh);
+        panel.add(actions, BorderLayout.SOUTH);
         return panel;
     }
 
@@ -583,8 +650,59 @@ public class CustomerPanel extends JFrame {
         };
     }
 
+    private ListCellRenderer<String> createNotificationRenderer() {
+        return (list, value, index, isSelected, cellHasFocus) -> {
+            String[] parts = value == null ? new String[0] : value.split("\\|");
+            String time = part(parts, 1);
+            String message = part(parts, 2);
+            String read = part(parts, 3).replace("read:", "").trim();
+            boolean isRead = read.equalsIgnoreCase("y") || read.equalsIgnoreCase("yes") || read.equalsIgnoreCase("true") || read.equalsIgnoreCase("1");
+
+            JPanel row = new JPanel(new BorderLayout(6, 4));
+            row.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(235, 235, 235)),
+                    BorderFactory.createEmptyBorder(8, 10, 8, 10)
+            ));
+            row.setOpaque(true);
+            row.setBackground(isSelected ? list.getSelectionBackground() : list.getBackground());
+
+            JLabel msgLabel = new JLabel(message);
+            msgLabel.setFont(list.getFont().deriveFont(Font.BOLD));
+            msgLabel.setForeground(isSelected ? list.getSelectionForeground() : list.getForeground());
+
+            JLabel timeLabel = new JLabel(time);
+            timeLabel.setForeground(isSelected ? list.getSelectionForeground() : new Color(70, 70, 70));
+
+            JLabel readLabel = new JLabel(isRead ? "Read" : "Unread");
+            Color statusColor = isRead ? new Color(110, 110, 110) : new Color(0, 115, 86);
+            readLabel.setForeground(isSelected ? list.getSelectionForeground() : statusColor);
+
+            JPanel top = new JPanel(new BorderLayout());
+            top.setOpaque(false);
+            top.add(msgLabel, BorderLayout.CENTER);
+            top.add(readLabel, BorderLayout.EAST);
+
+            JPanel bottom = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+            bottom.setOpaque(false);
+            bottom.add(timeLabel);
+
+            row.add(top, BorderLayout.NORTH);
+            row.add(bottom, BorderLayout.CENTER);
+            return row;
+        };
+    }
+
     private String part(String[] parts, int index) {
         return index < parts.length ? parts[index].trim() : "";
+    }
+
+    private String formatNotification(Notification n) {
+        String time = n.getCreatedAt() == null ? "-" : LocalDateTime.ofInstant(n.getCreatedAt(), ZoneId.systemDefault()).format(notificationFormatter);
+        return n.getId() + " | " + time + " | " + safe(n.getMessage()) + " | read:" + (n.isRead() ? "Y" : "N");
+    }
+
+    private String safe(String value) {
+        return value == null || value.isBlank() ? "-" : value;
     }
 
     private String capitalize(String text) {

@@ -25,6 +25,7 @@ C:\Users\HP\hotel-management-system\src\main\java\dao\ReservationActionDAO.java
 C:\Users\HP\hotel-management-system\src\main\java\service\ReservationService.java
 C:\Users\HP\hotel-management-system\src\main\java\state\CanceledState.java
 C:\Users\HP\hotel-management-system\src\main\java\state\ReservationState.java
+C:\Users\HP\hotel-management-system\src\main\java\service\NotificationQueryService.java
 C:\Users\HP\hotel-management-system\src\main\java\model\reservation\Reservation.java
 C:\Users\HP\hotel-management-system\src\main\java\model\user\Staff.java
 C:\Users\HP\hotel-management-system\src\main\java\builder\CustomerBuilder.java

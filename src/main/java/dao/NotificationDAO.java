@@ -50,6 +50,27 @@ public class NotificationDAO {
         return notifications;
     }
 
+    public void markAsRead(int notificationId) {
+        String sql = "UPDATE notifications SET is_read=1 WHERE notification_id=?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, notificationId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to mark notification as read", e);
+        }
+    }
+
+    public void markAllAsRead(String userType, int userId) {
+        String sql = "UPDATE notifications SET is_read=1 WHERE user_type=? AND user_id=?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, userType);
+            ps.setInt(2, userId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to mark notifications as read", e);
+        }
+    }
+
     private Notification mapRow(ResultSet rs) throws SQLException {
         Notification notification = new Notification();
         notification.setId(rs.getInt("notification_id"));
