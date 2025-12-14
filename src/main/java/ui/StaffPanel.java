@@ -35,7 +35,7 @@ public class StaffPanel extends JFrame {
     private final JTextField staffEmailField = new JTextField();
     private final JTextField staffNationalIdField = new JTextField();
     private final JPasswordField staffPasswordField = new JPasswordField();
-    private final JComboBox<String> staffRoleBox = new JComboBox<>(new String[]{"reception", "manager", "admin"});
+    private final JComboBox<String> staffRoleBox = new JComboBox<>(new String[]{"staff", "admin"});
 
     private final DefaultListModel<String> roomListModel = new DefaultListModel<>();
     private List<Room> cachedRooms;
