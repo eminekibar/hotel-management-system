@@ -75,23 +75,28 @@ public class CustomerPanel extends JFrame {
     }
 
     private JPanel profilePanel() {
-        JPanel panel = new JPanel(new GridLayout(0, 2, 5, 5));
-        panel.add(new JLabel("Username:"));
-        panel.add(new JLabel(customer.getUsername()));
-        panel.add(new JLabel("First Name:"));
-        panel.add(new JLabel(customer.getFirstName()));
-        panel.add(new JLabel("Last Name:"));
-        panel.add(new JLabel(customer.getLastName()));
-        panel.add(new JLabel("National ID:"));
-        panel.add(new JLabel(customer.getNationalId()));
+        JPanel container = new JPanel();
+        container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
+        container.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
-        panel.add(new JLabel("Email:"));
+        JPanel infoPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(4, 6, 4, 6);
+        gbc.anchor = GridBagConstraints.LINE_START;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        int row = 0;
+        addInfoRow(infoPanel, gbc, row++, "Username:", new JLabel(customer.getUsername()));
+        addInfoRow(infoPanel, gbc, row++, "First Name:", new JLabel(customer.getFirstName()));
+        addInfoRow(infoPanel, gbc, row++, "Last Name:", new JLabel(customer.getLastName()));
+        addInfoRow(infoPanel, gbc, row++, "National ID:", new JLabel(customer.getNationalId()));
+
         emailField.setText(customer.getEmail());
-        panel.add(emailField);
-
-        panel.add(new JLabel("Phone:"));
+        addInfoRow(infoPanel, gbc, row++, "Email:", emailField);
         phoneField.setText(customer.getPhone());
-        panel.add(phoneField);
+        addInfoRow(infoPanel, gbc, row++, "Phone:", phoneField);
+
+        container.add(infoPanel);
 
         JButton save = new JButton("Update Contact");
         save.addActionListener(e -> {
@@ -100,19 +105,45 @@ public class CustomerPanel extends JFrame {
             customerService.updateProfile(customer);
             JOptionPane.showMessageDialog(this, "Profile updated");
         });
-        panel.add(save);
+        JPanel contactButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 8));
+        contactButtons.add(save);
+        container.add(contactButtons);
 
-        panel.add(new JLabel("New Password:"));
-        panel.add(newPasswordField);
+        JPanel passwordPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints pgbc = new GridBagConstraints();
+        pgbc.insets = new Insets(4, 6, 4, 6);
+        pgbc.anchor = GridBagConstraints.LINE_START;
+        pgbc.fill = GridBagConstraints.HORIZONTAL;
+        pgbc.weightx = 0;
+        pgbc.gridx = 0; pgbc.gridy = 0;
+        passwordPanel.add(new JLabel("New Password:"), pgbc);
+        pgbc.weightx = 1;
+        pgbc.gridx = 1;
+        passwordPanel.add(newPasswordField, pgbc);
         JButton changePassword = new JButton("Change Password");
         changePassword.addActionListener(e -> updatePassword());
-        panel.add(changePassword);
+        pgbc.weightx = 0;
+        pgbc.gridx = 2;
+        passwordPanel.add(changePassword, pgbc);
+        container.add(passwordPanel);
 
         JButton deleteAccount = new JButton("Delete Account");
         deleteAccount.addActionListener(e -> deleteAccount());
-        panel.add(deleteAccount);
+        JPanel deleteRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 8));
+        deleteRow.add(deleteAccount);
+        container.add(deleteRow);
 
-        return panel;
+        return container;
+    }
+
+    private void addInfoRow(JPanel panel, GridBagConstraints gbc, int row, String label, JComponent comp) {
+        gbc.weightx = 0;
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        panel.add(new JLabel(label), gbc);
+        gbc.weightx = 1;
+        gbc.gridx = 1;
+        panel.add(comp, gbc);
     }
 
     private JPanel searchPanel() {
