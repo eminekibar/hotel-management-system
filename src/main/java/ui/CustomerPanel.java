@@ -10,7 +10,10 @@ import service.RoomService;
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
 import java.util.List;
+import java.util.Locale;
 
 public class CustomerPanel extends JFrame {
 
@@ -27,11 +30,13 @@ public class CustomerPanel extends JFrame {
     private final DefaultListModel<String> reservationListModel = new DefaultListModel<>();
     private final DefaultListModel<String> historyListModel = new DefaultListModel<>();
 
-    private final JTextField startDateField = new JTextField("2024-12-01");
-    private final JTextField endDateField = new JTextField("2024-12-05");
+    private final JTextField startDateField = new JTextField();
+    private final JTextField endDateField = new JTextField();
     private final JComboBox<String> roomTypeBox = new JComboBox<>(new String[]{"standard", "suite", "family"});
     private final JSpinner capacitySpinner = new JSpinner(new SpinnerNumberModel(2, 1, 6, 1));
     private final JList<String> reservationList = new JList<>(reservationListModel);
+    private final DateTimeFormatter displayFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
+    private final DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy");
 
     public CustomerPanel(Customer customer) {
         this.customer = customer;
@@ -42,6 +47,7 @@ public class CustomerPanel extends JFrame {
         buildUi();
         refreshReservations();
         refreshHistory();
+        setDefaultDates();
         setVisible(true);
     }
 
@@ -110,10 +116,10 @@ public class CustomerPanel extends JFrame {
     private JPanel searchPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         JPanel form = new JPanel(new GridLayout(0, 2, 5, 5));
-        form.add(new JLabel("Check-in (yyyy-MM-dd):"));
-        form.add(startDateField);
-        form.add(new JLabel("Check-out (yyyy-MM-dd):"));
-        form.add(endDateField);
+        form.add(new JLabel("Check-in date:"));
+        form.add(wrapWithDatePicker(startDateField));
+        form.add(new JLabel("Check-out date:"));
+        form.add(wrapWithDatePicker(endDateField));
         form.add(new JLabel("Room type:"));
         form.add(roomTypeBox);
         form.add(new JLabel("Guests:"));
@@ -153,9 +159,16 @@ public class CustomerPanel extends JFrame {
     }
 
     private void searchRooms() {
+        LocalDate start = parseDateField(startDateField, "Check-in date");
+        LocalDate end = parseDateField(endDateField, "Check-out date");
+        if (start == null || end == null) {
+            return;
+        }
+        if (!end.isAfter(start)) {
+            JOptionPane.showMessageDialog(this, "Check-out must be after check-in.");
+            return;
+        }
         try {
-            LocalDate start = LocalDate.parse(startDateField.getText().trim());
-            LocalDate end = LocalDate.parse(endDateField.getText().trim());
             String type = (String) roomTypeBox.getSelectedItem();
             int capacity = (Integer) capacitySpinner.getValue();
             java.util.List<model.room.RoomAvailabilityInfo> availabilityList = roomService.searchWithAvailability(type, capacity, start, end);
@@ -182,8 +195,15 @@ public class CustomerPanel extends JFrame {
             return;
         }
         try {
-            LocalDate start = LocalDate.parse(startDateField.getText().trim());
-            LocalDate end = LocalDate.parse(endDateField.getText().trim());
+            LocalDate start = parseDateField(startDateField, "Check-in date");
+            LocalDate end = parseDateField(endDateField, "Check-out date");
+            if (start == null || end == null) {
+                return;
+            }
+            if (!end.isAfter(start)) {
+                JOptionPane.showMessageDialog(this, "Check-out must be after check-in.");
+                return;
+            }
             Room room = lastSearchResults.get(index);
             Reservation reservation = reservationService.createReservation(customer, room, start, end);
             JOptionPane.showMessageDialog(this, "Reservation created: " + reservation.getReservationId());
@@ -268,6 +288,127 @@ public class CustomerPanel extends JFrame {
             logout();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Failed to deactivate account: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void setDefaultDates() {
+        LocalDate today = LocalDate.now();
+        setDateField(startDateField, today.plusDays(1));
+        setDateField(endDateField, today.plusDays(3));
+    }
+
+    private JPanel wrapWithDatePicker(JTextField field) {
+        field.setEditable(false);
+        field.setColumns(12);
+        field.setHorizontalAlignment(JTextField.CENTER);
+        JButton button = new JButton("\uD83D\uDCC5");
+        button.setMargin(new Insets(2, 6, 2, 6));
+        button.addActionListener(e -> openCalendar(field));
+        JPanel wrapper = new JPanel(new BorderLayout(4, 0));
+        wrapper.add(field, BorderLayout.CENTER);
+        wrapper.add(button, BorderLayout.EAST);
+        return wrapper;
+    }
+
+    private void openCalendar(JTextField targetField) {
+        LocalDate baseDate = parseDateField(targetField, null);
+        if (baseDate == null) {
+            baseDate = LocalDate.now();
+        }
+        JDialog dialog = new JDialog(this, "Select date", true);
+        dialog.setLayout(new BorderLayout(8, 8));
+        JPanel monthNav = new JPanel(new BorderLayout());
+        JButton prevMonth = new JButton("<");
+        JButton nextMonth = new JButton(">");
+        JButton prevYear = new JButton("<<");
+        JButton nextYear = new JButton(">>");
+        JLabel monthLabel = new JLabel("", SwingConstants.CENTER);
+        monthLabel.setFont(monthLabel.getFont().deriveFont(Font.BOLD, 13f));
+        JPanel west = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        west.add(prevYear);
+        west.add(prevMonth);
+        JPanel east = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        east.add(nextMonth);
+        east.add(nextYear);
+        monthNav.add(west, BorderLayout.WEST);
+        monthNav.add(monthLabel, BorderLayout.CENTER);
+        monthNav.add(east, BorderLayout.EAST);
+
+        JPanel daysPanel = new JPanel(new GridLayout(0, 7, 4, 4));
+        JPanel container = new JPanel(new BorderLayout(0, 6));
+        container.add(buildWeekHeader(), BorderLayout.NORTH);
+        container.add(daysPanel, BorderLayout.CENTER);
+
+        dialog.add(monthNav, BorderLayout.NORTH);
+        dialog.add(container, BorderLayout.CENTER);
+        dialog.setSize(320, 260);
+        dialog.setLocationRelativeTo(this);
+
+        final LocalDate[] currentMonth = {baseDate.withDayOfMonth(1)};
+        Runnable render = () -> {
+            monthLabel.setText(currentMonth[0].format(monthFormatter));
+            daysPanel.removeAll();
+            int startOffset = (currentMonth[0].getDayOfWeek().getValue() + 6) % 7; // Monday=0..Sunday=6
+            for (int i = 0; i < startOffset; i++) {
+                daysPanel.add(new JLabel(""));
+            }
+            int length = currentMonth[0].lengthOfMonth();
+            for (int d = 1; d <= length; d++) {
+                LocalDate date = currentMonth[0].withDayOfMonth(d);
+                JButton dayBtn = new JButton(String.valueOf(d));
+                dayBtn.setMargin(new Insets(2, 2, 2, 2));
+                dayBtn.addActionListener(e -> {
+                    setDateField(targetField, date);
+                    dialog.dispose();
+                });
+                daysPanel.add(dayBtn);
+            }
+            daysPanel.revalidate();
+            daysPanel.repaint();
+        };
+        prevMonth.addActionListener(e -> {
+            currentMonth[0] = currentMonth[0].minusMonths(1);
+            render.run();
+        });
+        nextMonth.addActionListener(e -> {
+            currentMonth[0] = currentMonth[0].plusMonths(1);
+            render.run();
+        });
+        prevYear.addActionListener(e -> {
+            currentMonth[0] = currentMonth[0].minusYears(1);
+            render.run();
+        });
+        nextYear.addActionListener(e -> {
+            currentMonth[0] = currentMonth[0].plusYears(1);
+            render.run();
+        });
+        render.run();
+        dialog.setVisible(true);
+    }
+
+    private JPanel buildWeekHeader() {
+        JPanel header = new JPanel(new GridLayout(1, 7, 4, 4));
+        for (int i = 1; i <= 7; i++) {
+            java.time.DayOfWeek dow = java.time.DayOfWeek.of(i == 7 ? 7 : i); // keep order Mon..Sun
+            JLabel lbl = new JLabel(dow.getDisplayName(TextStyle.SHORT, Locale.getDefault()), SwingConstants.CENTER);
+            lbl.setFont(lbl.getFont().deriveFont(Font.BOLD, 11f));
+            header.add(lbl);
+        }
+        return header;
+    }
+
+    private void setDateField(JTextField field, LocalDate date) {
+        field.setText(date.format(displayFormatter));
+    }
+
+    private LocalDate parseDateField(JTextField field, String label) {
+        try {
+            return LocalDate.parse(field.getText().trim(), displayFormatter);
+        } catch (Exception e) {
+            if (label != null) {
+                JOptionPane.showMessageDialog(this, label + " is not valid. Please pick a date.");
+            }
+            return null;
         }
     }
 }
