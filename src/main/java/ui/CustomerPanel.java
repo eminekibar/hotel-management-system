@@ -48,17 +48,21 @@ public class CustomerPanel extends JFrame {
     private void buildUi() {
         setLayout(new BorderLayout());
         JPanel header = new JPanel(new BorderLayout());
-        header.add(new JLabel("Logged in as: " + customer.getDisplayName()), BorderLayout.WEST);
+        JLabel welcome = new JLabel("Welcome, " + customer.getDisplayName());
+        welcome.setFont(welcome.getFont().deriveFont(Font.BOLD, 16f));
+        welcome.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
+        header.add(welcome, BorderLayout.WEST);
         JButton logout = new JButton("Logout");
         logout.addActionListener(e -> logout());
         header.add(logout, BorderLayout.EAST);
         add(header, BorderLayout.NORTH);
 
         JTabbedPane tabs = new JTabbedPane();
-        tabs.addTab("Profile", profilePanel());
-        tabs.addTab("Search Rooms", searchPanel());
-        tabs.addTab("Reservations", reservationsPanel());
+        tabs.addTab("Book a Stay", searchPanel());
+        tabs.addTab("My Reservations", reservationsPanel());
         tabs.addTab("History", historyPanel());
+        tabs.addTab("Profile", profilePanel());
+        tabs.setSelectedIndex(0);
         add(tabs, BorderLayout.CENTER);
     }
 
@@ -106,15 +110,15 @@ public class CustomerPanel extends JFrame {
     private JPanel searchPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         JPanel form = new JPanel(new GridLayout(0, 2, 5, 5));
-        form.add(new JLabel("Start Date (yyyy-MM-dd):"));
+        form.add(new JLabel("Check-in (yyyy-MM-dd):"));
         form.add(startDateField);
-        form.add(new JLabel("End Date (yyyy-MM-dd):"));
+        form.add(new JLabel("Check-out (yyyy-MM-dd):"));
         form.add(endDateField);
-        form.add(new JLabel("Room Type:"));
+        form.add(new JLabel("Room type:"));
         form.add(roomTypeBox);
-        form.add(new JLabel("Capacity:"));
+        form.add(new JLabel("Guests:"));
         form.add(capacitySpinner);
-        JButton searchButton = new JButton("Search");
+        JButton searchButton = new JButton("Find Rooms");
         searchButton.addActionListener(e -> searchRooms());
         form.add(searchButton);
         panel.add(form, BorderLayout.NORTH);
@@ -122,7 +126,7 @@ public class CustomerPanel extends JFrame {
         JList<String> resultList = new JList<>(searchResultsModel);
         panel.add(new JScrollPane(resultList), BorderLayout.CENTER);
 
-        JButton reserveButton = new JButton("Reserve Selected");
+        JButton reserveButton = new JButton("Book Selected");
         reserveButton.addActionListener(e -> reserveSelected(resultList.getSelectedIndex()));
         panel.add(reserveButton, BorderLayout.SOUTH);
         return panel;
