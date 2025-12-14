@@ -42,6 +42,7 @@ public class StaffPanel extends JFrame {
 
     private final DefaultListModel<String> staffListModel = new DefaultListModel<>();
     private List<Staff> cachedStaff;
+    private List<Staff> visibleStaff;
     private final JTextField staffSearchField = new JTextField();
     private final JTextField staffUsernameField = new JTextField();
     private final JTextField staffFirstNameField = new JTextField();
@@ -50,6 +51,8 @@ public class StaffPanel extends JFrame {
     private final JTextField staffNationalIdField = new JTextField();
     private final JPasswordField staffPasswordField = new JPasswordField();
     private final JComboBox<String> staffRoleBox = new JComboBox<>(new String[]{"staff", "admin"});
+    private final JComboBox<String> staffStatusFilter = new JComboBox<>(new String[]{"All", "Active", "Inactive"});
+    private final JComboBox<String> staffRoleFilter = new JComboBox<>(new String[]{"All", "staff", "admin"});
 
     private final DefaultListModel<String> roomListModel = new DefaultListModel<>();
     private List<Room> cachedRooms;
@@ -221,24 +224,67 @@ public class StaffPanel extends JFrame {
     }
 
     private JPanel staffPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+        JTabbedPane innerTabs = new JTabbedPane();
+        innerTabs.addTab("List & Manage", manageStaffPanel(innerTabs));
+        innerTabs.addTab("Create New", createStaffPanel(innerTabs));
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.add(innerTabs, BorderLayout.CENTER);
+        return wrapper;
+    }
+
+    private JPanel manageStaffPanel(JTabbedPane parentTabs) {
+        JPanel panel = new JPanel(new BorderLayout(6, 6));
         JList<String> list = new JList<>(staffListModel);
+        list.setCellRenderer(createStaffRenderer());
+        list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         panel.add(new JScrollPane(list), BorderLayout.CENTER);
 
-        JPanel top = new JPanel(new BorderLayout(4, 4));
-        top.add(staffSearchField, BorderLayout.CENTER);
-        JButton search = new JButton("Search");
-        search.addActionListener(e -> refreshStaff());
+        JPanel filterFields = new JPanel(new GridLayout(2, 3, 6, 6));
+        filterFields.add(new JLabel("Search (name/username/email)"));
+        filterFields.add(staffSearchField);
+        filterFields.add(new JLabel(""));
+        filterFields.add(new JLabel("Status"));
+        filterFields.add(staffStatusFilter);
+        JPanel extra = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        extra.add(new JLabel("Role"));
+        extra.add(staffRoleFilter);
+        filterFields.add(extra);
+
+        JPanel filterWrapper = new JPanel(new BorderLayout());
+        filterWrapper.setBorder(BorderFactory.createTitledBorder("Filter Staff"));
+        filterWrapper.add(filterFields, BorderLayout.CENTER);
+        JPanel filterButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        JButton apply = new JButton("Apply");
+        apply.addActionListener(e -> refreshStaff());
+        JButton clear = new JButton("Reset");
+        clear.addActionListener(e -> {
+            staffSearchField.setText("");
+            staffStatusFilter.setSelectedIndex(0);
+            staffRoleFilter.setSelectedIndex(0);
+            refreshStaff();
+        });
+        filterButtons.add(apply);
+        filterButtons.add(clear);
+        filterWrapper.add(filterButtons, BorderLayout.EAST);
+        panel.add(filterWrapper, BorderLayout.NORTH);
+
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
         JButton deactivate = new JButton("Deactivate");
         deactivate.addActionListener(e -> deactivateStaff(list.getSelectedIndex()));
-        JPanel buttons = new JPanel();
-        buttons.add(search);
-        buttons.add(deactivate);
-        top.add(buttons, BorderLayout.EAST);
-        panel.add(top, BorderLayout.NORTH);
+        JButton refresh = new JButton("Refresh List");
+        refresh.addActionListener(e -> refreshStaff());
+        JButton toCreate = new JButton("Create New");
+        toCreate.addActionListener(e -> parentTabs.setSelectedIndex(1));
+        actions.add(deactivate);
+        actions.add(refresh);
+        actions.add(toCreate);
+        panel.add(actions, BorderLayout.SOUTH);
+        return panel;
+    }
 
-        JPanel form = new JPanel(new GridLayout(0, 2, 4, 4));
-        form.setBorder(BorderFactory.createTitledBorder("Add Staff"));
+    private JPanel createStaffPanel(JTabbedPane parentTabs) {
+        JPanel form = new JPanel(new GridLayout(0, 2, 6, 6));
+        form.setBorder(BorderFactory.createTitledBorder("Create Staff"));
         form.add(new JLabel("Username"));
         form.add(staffUsernameField);
         form.add(new JLabel("First Name"));
@@ -254,11 +300,15 @@ public class StaffPanel extends JFrame {
         form.add(new JLabel("Role"));
         form.add(staffRoleBox);
         JButton addBtn = new JButton("Add Staff");
-        addBtn.addActionListener(e -> addStaff());
-        form.add(new JLabel(""));
+        addBtn.addActionListener(e -> registerStaff(parentTabs));
+        JButton clear = new JButton("Clear");
+        clear.addActionListener(e -> clearStaffCreateForm());
         form.add(addBtn);
-        panel.add(form, BorderLayout.SOUTH);
-        return panel;
+        form.add(clear);
+
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.add(form, BorderLayout.NORTH);
+        return wrapper;
     }
 
     private JPanel roomsPanel() {
@@ -525,28 +575,65 @@ public class StaffPanel extends JFrame {
 
     private void refreshStaff() {
         cachedStaff = staffService.searchStaff(staffSearchField.getText().trim());
+        applyStaffFilters();
+    }
+
+    private void applyStaffFilters() {
         staffListModel.clear();
+        visibleStaff = new ArrayList<>();
+        if (cachedStaff == null) {
+            return;
+        }
+        String status = (String) staffStatusFilter.getSelectedItem();
+        String roleFilter = (String) staffRoleFilter.getSelectedItem();
         for (Staff s : cachedStaff) {
-            staffListModel.addElement(s.getId() + " | " + s.getDisplayName() + " | " + s.getUsername() + " | role=" + s.getRole() + " | active=" + (s.isActive() ? "Y" : "N"));
+            if ("Active".equals(status) && !s.isActive()) {
+                continue;
+            }
+            if ("Inactive".equals(status) && s.isActive()) {
+                continue;
+            }
+            if (!"All".equalsIgnoreCase(roleFilter)) {
+                String staffRole = s.getRole() == null ? "" : s.getRole();
+                if (!staffRole.equalsIgnoreCase(roleFilter)) {
+                    continue;
+                }
+            }
+            visibleStaff.add(s);
+            staffListModel.addElement(formatStaff(s));
         }
     }
 
-    private void addStaff() {
-        String username = staffUsernameField.getText().trim();
-        String firstName = staffFirstNameField.getText().trim();
-        String lastName = staffLastNameField.getText().trim();
-        String email = staffEmailField.getText().trim();
-        String nationalId = staffNationalIdField.getText().trim();
-        String password = new String(staffPasswordField.getPassword());
-        String role = (String) staffRoleBox.getSelectedItem();
-
+    private void registerStaff(JTabbedPane parentTabs) {
         try {
-            Staff created = staffService.register(username, firstName, lastName, email, nationalId, role, password);
+            Staff created = staffService.register(
+                    staffUsernameField.getText().trim(),
+                    staffFirstNameField.getText().trim(),
+                    staffLastNameField.getText().trim(),
+                    staffEmailField.getText().trim(),
+                    staffNationalIdField.getText().trim(),
+                    (String) staffRoleBox.getSelectedItem(),
+                    new String(staffPasswordField.getPassword())
+            );
             JOptionPane.showMessageDialog(this, "Staff created: " + created.getUsername());
+            clearStaffCreateForm();
             refreshStaff();
+            if (parentTabs != null) {
+                parentTabs.setSelectedIndex(0);
+            }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Failed to create staff: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private void clearStaffCreateForm() {
+        staffUsernameField.setText("");
+        staffFirstNameField.setText("");
+        staffLastNameField.setText("");
+        staffEmailField.setText("");
+        staffNationalIdField.setText("");
+        staffPasswordField.setText("");
+        staffRoleBox.setSelectedIndex(0);
     }
 
     private void deactivateStaff(int index) {
@@ -554,11 +641,11 @@ public class StaffPanel extends JFrame {
             JOptionPane.showMessageDialog(this, "Only admin can deactivate staff.");
             return;
         }
-        if (index < 0 || cachedStaff == null || index >= cachedStaff.size()) {
+        if (index < 0 || visibleStaff == null || index >= visibleStaff.size()) {
             JOptionPane.showMessageDialog(this, "Select a staff first");
             return;
         }
-        Staff target = cachedStaff.get(index);
+        Staff target = visibleStaff.get(index);
         if (target.getUsername() != null && target.getUsername().equalsIgnoreCase("admin")) {
             JOptionPane.showMessageDialog(this, "Admin account cannot be deactivated.");
             return;
@@ -893,6 +980,14 @@ public class StaffPanel extends JFrame {
                 " | price:" + room.getPricePerNight();
     }
 
+    private String formatStaff(Staff s) {
+        return s.getId() + " | " + safe(s.getDisplayName()) +
+                " | user:" + safe(s.getUsername()) +
+                " | role:" + safe(s.getRole()) +
+                " | email:" + safe(s.getEmail()) +
+                " | active:" + (s.isActive() ? "Y" : "N");
+    }
+
     private ListCellRenderer<String> createCustomerRenderer() {
         return (list, value, index, isSelected, cellHasFocus) -> {
             String[] parts = value == null ? new String[0] : value.split("\\|");
@@ -999,6 +1094,55 @@ public class StaffPanel extends JFrame {
 
             row.add(topLine, BorderLayout.NORTH);
             row.add(middleLine, BorderLayout.CENTER);
+            return row;
+        };
+    }
+
+    private ListCellRenderer<String> createStaffRenderer() {
+        return (list, value, index, isSelected, cellHasFocus) -> {
+            String[] parts = value == null ? new String[0] : value.split("\\|");
+            String name = part(parts, 1);
+            String username = part(parts, 2).replace("user:", "").trim();
+            String role = part(parts, 3).replace("role:", "").trim();
+            String email = part(parts, 4).replace("email:", "").trim();
+            String active = part(parts, 5).replace("active:", "").replace("active=", "").trim();
+            boolean isActive = active.equalsIgnoreCase("y") || active.equalsIgnoreCase("yes") || active.equalsIgnoreCase("true") || active.equalsIgnoreCase("active");
+
+            JPanel row = new JPanel(new BorderLayout(6, 4));
+            row.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(235, 235, 235)),
+                    BorderFactory.createEmptyBorder(8, 10, 8, 10)
+            ));
+            row.setOpaque(true);
+            row.setBackground(isSelected ? list.getSelectionBackground() : list.getBackground());
+
+            JLabel title = new JLabel(name + (username.isBlank() ? "" : " (" + username + ")"));
+            title.setFont(list.getFont().deriveFont(Font.BOLD));
+            title.setForeground(isSelected ? list.getSelectionForeground() : list.getForeground());
+
+            JLabel roleLabel = new JLabel("Role: " + (role.isBlank() ? "-" : role));
+            roleLabel.setForeground(isSelected ? list.getSelectionForeground() : new Color(70, 70, 70));
+
+            JLabel emailLabel = new JLabel("Email: " + (email.isBlank() ? "-" : email));
+            emailLabel.setForeground(isSelected ? list.getSelectionForeground() : new Color(70, 70, 70));
+
+            JLabel activeLabel = new JLabel(isActive ? "Active" : "Inactive");
+            Color statusColor = isActive ? new Color(0, 115, 86) : new Color(150, 33, 33);
+            activeLabel.setForeground(isSelected ? list.getSelectionForeground() : statusColor);
+
+            JPanel topLine = new JPanel(new BorderLayout());
+            topLine.setOpaque(false);
+            topLine.add(title, BorderLayout.WEST);
+            topLine.add(activeLabel, BorderLayout.EAST);
+
+            JPanel bottomLine = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+            bottomLine.setOpaque(false);
+            bottomLine.add(roleLabel);
+            bottomLine.add(new JLabel("\u2022"));
+            bottomLine.add(emailLabel);
+
+            row.add(topLine, BorderLayout.NORTH);
+            row.add(bottomLine, BorderLayout.CENTER);
             return row;
         };
     }
