@@ -49,6 +49,10 @@ public class ReservationService {
         if (room.getCapacity() <= 0) {
             throw new IllegalArgumentException("Room capacity is invalid");
         }
+        Reservation overlap = reservationDAO.findFirstOverlapForRoom(room.getId(), start, end);
+        if (overlap != null) {
+            throw new IllegalStateException("Room is not available for the selected dates (overlaps reservation #" + overlap.getReservationId() + ").");
+        }
         Reservation reservation = new Reservation();
         reservation.setCustomer(customer);
         reservation.setRoom(room);
