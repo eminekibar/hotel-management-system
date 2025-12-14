@@ -13,6 +13,9 @@ Java 17 + Swing + MySQL tabanlı otel rezervasyon ve müşteri takip uygulaması
 - `dao`: CRUD/JDBC erişimi
 - `service`: İş mantığı (auth, customer, room, reservation)
 - `ui`: Swing ekranları (Login, CustomerPanel, StaffPanel)
+-
+- ![Uploading use-case-java.png…]()
+
 
 ### Özellikler
 - Giriş: kullanıcı adı/e-posta/TCKN + şifre ile müşteri veya personel girişi.
