@@ -12,7 +12,12 @@ import service.StaffService;
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class StaffPanel extends JFrame {
 
@@ -24,7 +29,16 @@ public class StaffPanel extends JFrame {
 
     private final DefaultListModel<String> customerListModel = new DefaultListModel<>();
     private List<Customer> cachedCustomers;
+    private List<Customer> visibleCustomers;
     private final JTextField customerSearchField = new JTextField();
+    private final JComboBox<String> customerStatusFilter = new JComboBox<>(new String[]{"All", "Active", "Inactive"});
+    private final JTextField customerUsernameField = new JTextField();
+    private final JTextField customerFirstNameField = new JTextField();
+    private final JTextField customerLastNameField = new JTextField();
+    private final JTextField customerEmailField = new JTextField();
+    private final JTextField customerPhoneField = new JTextField();
+    private final JTextField customerNationalIdField = new JTextField();
+    private final JPasswordField customerPasswordField = new JPasswordField();
 
     private final DefaultListModel<String> staffListModel = new DefaultListModel<>();
     private List<Staff> cachedStaff;
@@ -39,6 +53,11 @@ public class StaffPanel extends JFrame {
 
     private final DefaultListModel<String> roomListModel = new DefaultListModel<>();
     private List<Room> cachedRooms;
+    private List<Room> filteredRooms;
+    private final JTextField roomSearchField = new JTextField();
+    private final JComboBox<String> roomTypeFilter = new JComboBox<>(new String[]{"All", "standard", "suite", "family"});
+    private final JComboBox<String> roomStatusFilter = new JComboBox<>(new String[]{"All", "available", "reserved", "maintenance", "inactive"});
+    private final JSpinner roomCapacityFilter = new JSpinner(new SpinnerNumberModel(0, 0, 20, 1));
 
     private final DefaultListModel<String> reservationListModel = new DefaultListModel<>();
     private List<Reservation> cachedReservations;
@@ -46,6 +65,7 @@ public class StaffPanel extends JFrame {
     private final JTextField reservationRoomFilter = new JTextField();
     private final JTextField reservationStartFilter = new JTextField();
     private final JTextField reservationEndFilter = new JTextField();
+    private final DateTimeFormatter filterFormatter = DateTimeFormatter.ISO_LOCAL_DATE;
 
     private final JTextField roomNumberField = new JTextField();
     private final JComboBox<String> roomTypeBox = new JComboBox<>(new String[]{"standard", "suite", "family"});
@@ -115,32 +135,89 @@ public class StaffPanel extends JFrame {
     }
 
     private JPanel customersPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+        JTabbedPane innerTabs = new JTabbedPane();
+        innerTabs.addTab("List & Manage", manageCustomersPanel(innerTabs));
+        innerTabs.addTab("Create New", createCustomerPanel(innerTabs));
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.add(innerTabs, BorderLayout.CENTER);
+        return wrapper;
+    }
+
+    private JPanel manageCustomersPanel(JTabbedPane parentTabs) {
+        JPanel panel = new JPanel(new BorderLayout(6, 6));
         JList<String> list = new JList<>(customerListModel);
+        list.setCellRenderer(createCustomerRenderer());
+        list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         panel.add(new JScrollPane(list), BorderLayout.CENTER);
 
-        JPanel top = new JPanel(new BorderLayout(4, 4));
-        top.add(customerSearchField, BorderLayout.CENTER);
-        JButton search = new JButton("Search");
-        search.addActionListener(e -> refreshCustomers());
-        JButton addCustomer = new JButton("Add Customer");
-        addCustomer.addActionListener(e -> openCustomerDialog());
+        JPanel filterFields = new JPanel(new GridLayout(2, 3, 6, 6));
+        filterFields.add(new JLabel("Search (name, username, email)"));
+        filterFields.add(customerSearchField);
+        filterFields.add(new JLabel(""));
+        filterFields.add(new JLabel("Status"));
+        filterFields.add(customerStatusFilter);
+        JPanel filterButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        JButton apply = new JButton("Apply");
+        apply.addActionListener(e -> refreshCustomers());
+        JButton clear = new JButton("Reset");
+        clear.addActionListener(e -> {
+            customerSearchField.setText("");
+            customerStatusFilter.setSelectedIndex(0);
+            refreshCustomers();
+        });
+        filterButtons.add(apply);
+        filterButtons.add(clear);
+        filterFields.add(filterButtons);
+
+        JPanel filterWrapper = new JPanel(new BorderLayout());
+        filterWrapper.setBorder(BorderFactory.createTitledBorder("Filter Customers"));
+        filterWrapper.add(filterFields, BorderLayout.CENTER);
+        panel.add(filterWrapper, BorderLayout.NORTH);
+
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
         JButton details = new JButton("Details");
         details.addActionListener(e -> openCustomerDetails(list.getSelectedIndex()));
         JButton deactivate = new JButton("Deactivate");
         deactivate.addActionListener(e -> deactivateCustomer(list.getSelectedIndex()));
-        JPanel buttons = new JPanel();
-        buttons.add(search);
-        buttons.add(addCustomer);
-        buttons.add(details);
-        buttons.add(deactivate);
-        top.add(buttons, BorderLayout.EAST);
-        panel.add(top, BorderLayout.NORTH);
-
-        JButton refresh = new JButton("Refresh");
+        JButton refresh = new JButton("Refresh List");
         refresh.addActionListener(e -> refreshCustomers());
-        panel.add(refresh, BorderLayout.SOUTH);
+        JButton toCreate = new JButton("Create New");
+        toCreate.addActionListener(e -> parentTabs.setSelectedIndex(1));
+        actions.add(details);
+        actions.add(deactivate);
+        actions.add(refresh);
+        actions.add(toCreate);
+        panel.add(actions, BorderLayout.SOUTH);
         return panel;
+    }
+
+    private JPanel createCustomerPanel(JTabbedPane parentTabs) {
+        JPanel form = new JPanel(new GridLayout(0, 2, 6, 6));
+        form.setBorder(BorderFactory.createTitledBorder("Create Customer"));
+        form.add(new JLabel("Username"));
+        form.add(customerUsernameField);
+        form.add(new JLabel("First Name"));
+        form.add(customerFirstNameField);
+        form.add(new JLabel("Last Name"));
+        form.add(customerLastNameField);
+        form.add(new JLabel("Email"));
+        form.add(customerEmailField);
+        form.add(new JLabel("Phone"));
+        form.add(customerPhoneField);
+        form.add(new JLabel("National ID (11 digits)"));
+        form.add(customerNationalIdField);
+        form.add(new JLabel("Password"));
+        form.add(customerPasswordField);
+        JButton create = new JButton("Add Customer");
+        create.addActionListener(e -> registerCustomer(parentTabs));
+        JButton clear = new JButton("Clear");
+        clear.addActionListener(e -> clearCustomerCreateForm());
+        form.add(create);
+        form.add(clear);
+
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.add(form, BorderLayout.NORTH);
+        return wrapper;
     }
 
     private JPanel staffPanel() {
@@ -185,11 +262,73 @@ public class StaffPanel extends JFrame {
     }
 
     private JPanel roomsPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+        JTabbedPane innerTabs = new JTabbedPane();
+        innerTabs.addTab("List & Manage", manageRoomsPanel(innerTabs));
+        innerTabs.addTab("Create New", createRoomPanel(innerTabs));
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.add(innerTabs, BorderLayout.CENTER);
+        return wrapper;
+    }
+
+    private JPanel manageRoomsPanel(JTabbedPane parentTabs) {
+        JPanel panel = new JPanel(new BorderLayout(6, 6));
         JList<String> list = new JList<>(roomListModel);
+        list.setCellRenderer(createRoomRenderer());
+        list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         panel.add(new JScrollPane(list), BorderLayout.CENTER);
 
-        JPanel form = new JPanel(new GridLayout(0, 2, 4, 4));
+        JPanel filterFields = new JPanel(new GridLayout(2, 4, 6, 6));
+        filterFields.add(new JLabel("Search (room no / type)"));
+        filterFields.add(roomSearchField);
+        filterFields.add(new JLabel("Type"));
+        filterFields.add(roomTypeFilter);
+        filterFields.add(new JLabel("Status"));
+        filterFields.add(roomStatusFilter);
+        filterFields.add(new JLabel("Min Capacity"));
+        filterFields.add(roomCapacityFilter);
+
+        JPanel filterWrapper = new JPanel(new BorderLayout());
+        filterWrapper.setBorder(BorderFactory.createTitledBorder("Filter Rooms"));
+        filterWrapper.add(filterFields, BorderLayout.CENTER);
+        JPanel filterButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        JButton apply = new JButton("Apply");
+        apply.addActionListener(e -> refreshRooms());
+        JButton clear = new JButton("Reset");
+        clear.addActionListener(e -> {
+            roomSearchField.setText("");
+            roomTypeFilter.setSelectedIndex(0);
+            roomStatusFilter.setSelectedIndex(0);
+            roomCapacityFilter.setValue(0);
+            refreshRooms();
+        });
+        filterButtons.add(apply);
+        filterButtons.add(clear);
+        filterWrapper.add(filterButtons, BorderLayout.EAST);
+        panel.add(filterWrapper, BorderLayout.NORTH);
+
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
+        JButton setAvailable = new JButton("Set Available");
+        setAvailable.addActionListener(e -> updateRoomStatus(list.getSelectedIndex(), "available"));
+        JButton setMaintenance = new JButton("Set Maintenance");
+        setMaintenance.addActionListener(e -> updateRoomStatus(list.getSelectedIndex(), "maintenance"));
+        JButton setInactive = new JButton("Set Inactive");
+        setInactive.addActionListener(e -> updateRoomStatus(list.getSelectedIndex(), "inactive"));
+        JButton refresh = new JButton("Refresh List");
+        refresh.addActionListener(e -> refreshRooms());
+        JButton toCreate = new JButton("Create New");
+        toCreate.addActionListener(e -> parentTabs.setSelectedIndex(1));
+        actions.add(setAvailable);
+        actions.add(setMaintenance);
+        actions.add(setInactive);
+        actions.add(refresh);
+        actions.add(toCreate);
+        panel.add(actions, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JPanel createRoomPanel(JTabbedPane parentTabs) {
+        JPanel form = new JPanel(new GridLayout(0, 2, 6, 6));
+        form.setBorder(BorderFactory.createTitledBorder("Create Room"));
         form.add(new JLabel("Room Number"));
         form.add(roomNumberField);
         form.add(new JLabel("Type"));
@@ -199,10 +338,18 @@ public class StaffPanel extends JFrame {
         form.add(new JLabel("Price/Night"));
         form.add(roomPriceSpinner);
         JButton addRoomButton = new JButton("Add Room");
-        addRoomButton.addActionListener(e -> addRoom());
+        addRoomButton.addActionListener(e -> {
+            addRoom();
+            parentTabs.setSelectedIndex(0);
+        });
+        JButton clear = new JButton("Clear");
+        clear.addActionListener(e -> clearRoomCreateForm());
         form.add(addRoomButton);
-        panel.add(form, BorderLayout.SOUTH);
-        return panel;
+        form.add(clear);
+
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.add(form, BorderLayout.NORTH);
+        return wrapper;
     }
 
     private JPanel reservationsPanel() {
@@ -221,10 +368,10 @@ public class StaffPanel extends JFrame {
         panel.add(new JScrollPane(reservationList), BorderLayout.CENTER);
 
         JPanel buttons = new JPanel();
-        JButton checkIn = new JButton("Guest Arrived");
+        JButton checkIn = new JButton("Check In");
         checkIn.setToolTipText("Mark guest as checked-in");
         checkIn.addActionListener(e -> performOnSelected(reservationList.getSelectedIndex(), "checkin"));
-        JButton checkOut = new JButton("Guest Left");
+        JButton checkOut = new JButton("Check Out");
         checkOut.setToolTipText("Mark guest as checked-out");
         checkOut.addActionListener(e -> performOnSelected(reservationList.getSelectedIndex(), "checkout"));
         JButton cancel = new JButton("Cancel Booking");
@@ -253,10 +400,11 @@ public class StaffPanel extends JFrame {
         filterPanel.add(reservationCustomerFilter);
         filterPanel.add(new JLabel("Room"));
         filterPanel.add(reservationRoomFilter);
+        filterPanel.add(new JLabel(""));
         filterPanel.add(new JLabel("Start Date"));
-        filterPanel.add(reservationStartFilter);
+        filterPanel.add(wrapWithDatePicker(reservationStartFilter));
         filterPanel.add(new JLabel("End Date"));
-        filterPanel.add(reservationEndFilter);
+        filterPanel.add(wrapWithDatePicker(reservationEndFilter));
         JButton applyFilter = new JButton("Apply");
         applyFilter.addActionListener(e -> refreshReservations());
         filterPanel.add(applyFilter);
@@ -296,18 +444,66 @@ public class StaffPanel extends JFrame {
 
     private void refreshCustomers() {
         cachedCustomers = customerService.searchCustomers(customerSearchField.getText().trim());
+        applyCustomerFilters();
+    }
+
+    private void applyCustomerFilters() {
         customerListModel.clear();
+        visibleCustomers = new ArrayList<>();
+        if (cachedCustomers == null) {
+            return;
+        }
+        String status = (String) customerStatusFilter.getSelectedItem();
         for (Customer c : cachedCustomers) {
-            customerListModel.addElement(c.getId() + " | " + c.getDisplayName() + " | " + c.getUsername() + " | " + c.getEmail() + " | active=" + (c.isActive() ? "Y" : "N"));
+            if ("Active".equals(status) && !c.isActive()) {
+                continue;
+            }
+            if ("Inactive".equals(status) && c.isActive()) {
+                continue;
+            }
+            visibleCustomers.add(c);
+            customerListModel.addElement(formatCustomer(c));
         }
     }
 
+    private void registerCustomer(JTabbedPane parentTabs) {
+        try {
+            Customer created = customerService.register(
+                    customerUsernameField.getText().trim(),
+                    customerFirstNameField.getText().trim(),
+                    customerLastNameField.getText().trim(),
+                    customerEmailField.getText().trim(),
+                    customerPhoneField.getText().trim(),
+                    customerNationalIdField.getText().trim(),
+                    new String(customerPasswordField.getPassword())
+            );
+            JOptionPane.showMessageDialog(this, "Customer created: " + created.getUsername());
+            clearCustomerCreateForm();
+            refreshCustomers();
+            if (parentTabs != null) {
+                parentTabs.setSelectedIndex(0);
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Failed to create customer: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void clearCustomerCreateForm() {
+        customerUsernameField.setText("");
+        customerFirstNameField.setText("");
+        customerLastNameField.setText("");
+        customerEmailField.setText("");
+        customerPhoneField.setText("");
+        customerNationalIdField.setText("");
+        customerPasswordField.setText("");
+    }
+
     private void deactivateCustomer(int index) {
-        if (index < 0 || cachedCustomers == null || index >= cachedCustomers.size()) {
+        if (index < 0 || visibleCustomers == null || index >= visibleCustomers.size()) {
             JOptionPane.showMessageDialog(this, "Select a customer first");
             return;
         }
-        Customer customer = cachedCustomers.get(index);
+        Customer customer = visibleCustomers.get(index);
         if (!customer.isActive()) {
             JOptionPane.showMessageDialog(this, "Customer is already inactive.");
             return;
@@ -388,9 +584,39 @@ public class StaffPanel extends JFrame {
 
     private void refreshRooms() {
         cachedRooms = roomService.listRooms();
+        applyRoomFilters();
+    }
+
+    private void applyRoomFilters() {
         roomListModel.clear();
+        filteredRooms = new ArrayList<>();
+        if (cachedRooms == null) {
+            return;
+        }
+        String search = roomSearchField.getText().trim().toLowerCase();
+        String type = (String) roomTypeFilter.getSelectedItem();
+        String status = (String) roomStatusFilter.getSelectedItem();
+        int minCapacity = (Integer) roomCapacityFilter.getValue();
         for (Room room : cachedRooms) {
-            roomListModel.addElement(room.getId() + " | " + room.getRoomNumber() + " | " + room.getType() + " | " + room.getStatus() + " | " + room.getPricePerNight());
+            if (!"All".equalsIgnoreCase(type)) {
+                if (room.getType() == null || !room.getType().equalsIgnoreCase(type)) {
+                    continue;
+                }
+            }
+            if (!"All".equalsIgnoreCase(status)) {
+                if (room.getStatus() == null || !room.getStatus().equalsIgnoreCase(status)) {
+                    continue;
+                }
+            }
+            if (minCapacity > 0 && room.getCapacity() < minCapacity) {
+                continue;
+            }
+            String combined = (safe(room.getRoomNumber()) + " " + safe(room.getType())).toLowerCase();
+            if (!search.isEmpty() && !combined.contains(search)) {
+                continue;
+            }
+            filteredRooms.add(room);
+            roomListModel.addElement(formatRoom(room));
         }
     }
 
@@ -434,7 +660,30 @@ public class StaffPanel extends JFrame {
                 ((Double) roomPriceSpinner.getValue())
         );
         JOptionPane.showMessageDialog(this, "Room added: " + room.getRoomNumber());
+        clearRoomCreateForm();
         refreshRooms();
+    }
+
+    private void updateRoomStatus(int selectedIndex, String status) {
+        if (selectedIndex < 0 || filteredRooms == null || selectedIndex >= filteredRooms.size()) {
+            JOptionPane.showMessageDialog(this, "Select a room first");
+            return;
+        }
+        Room room = filteredRooms.get(selectedIndex);
+        try {
+            roomService.updateStatus(room.getId(), status);
+            JOptionPane.showMessageDialog(this, "Room " + room.getRoomNumber() + " set to " + status);
+            refreshRooms();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Failed to update room: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void clearRoomCreateForm() {
+        roomNumberField.setText("");
+        roomTypeBox.setSelectedIndex(0);
+        roomCapacitySpinner.setValue(2);
+        roomPriceSpinner.setValue(100.0);
     }
 
     private void performOnSelected(int index, String action) {
@@ -510,11 +759,11 @@ public class StaffPanel extends JFrame {
     }
 
     private void openCustomerDetails(int index) {
-        if (index < 0 || cachedCustomers == null || index >= cachedCustomers.size()) {
+        if (index < 0 || visibleCustomers == null || index >= visibleCustomers.size()) {
             JOptionPane.showMessageDialog(this, "Select a customer first");
             return;
         }
-        Customer customer = cachedCustomers.get(index);
+        Customer customer = visibleCustomers.get(index);
         CustomerDetailDialog dialog = new CustomerDetailDialog(this, customer, reservationService);
         dialog.setVisible(true);
     }
@@ -522,6 +771,236 @@ public class StaffPanel extends JFrame {
     private void logout() {
         dispose();
         new LoginForm();
+    }
+
+    private JPanel wrapWithDatePicker(JTextField field) {
+        field.setColumns(9);
+        JButton button = new JButton("\uD83D\uDCC5");
+        button.setMargin(new Insets(2, 6, 2, 6));
+        button.setToolTipText("Pick a date");
+        button.addActionListener(e -> openCalendar(field));
+        JPanel wrapper = new JPanel(new BorderLayout(4, 0));
+        wrapper.add(field, BorderLayout.CENTER);
+        wrapper.add(button, BorderLayout.EAST);
+        return wrapper;
+    }
+
+    private void openCalendar(JTextField targetField) {
+        LocalDate baseDate = parseFilterDate(targetField);
+        if (baseDate == null) {
+            baseDate = LocalDate.now();
+        }
+        JDialog dialog = new JDialog(this, "Select date", true);
+        dialog.setLayout(new BorderLayout(8, 8));
+        JPanel monthNav = new JPanel(new BorderLayout());
+        JButton prevMonth = new JButton("<");
+        JButton nextMonth = new JButton(">");
+        JLabel monthLabel = new JLabel("", SwingConstants.CENTER);
+        monthLabel.setFont(monthLabel.getFont().deriveFont(Font.BOLD, 13f));
+        JPanel navButtons = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
+        navButtons.add(prevMonth);
+        navButtons.add(monthLabel);
+        navButtons.add(nextMonth);
+        monthNav.add(navButtons, BorderLayout.CENTER);
+
+        JPanel daysPanel = new JPanel(new GridLayout(0, 7, 4, 4));
+        JPanel container = new JPanel(new BorderLayout(0, 6));
+        container.add(buildWeekHeader(), BorderLayout.NORTH);
+        container.add(daysPanel, BorderLayout.CENTER);
+
+        dialog.add(monthNav, BorderLayout.NORTH);
+        dialog.add(container, BorderLayout.CENTER);
+        dialog.setSize(320, 260);
+        dialog.setLocationRelativeTo(this);
+
+        YearMonth[] currentMonth = {YearMonth.from(baseDate)};
+        Runnable render = () -> {
+            String monthText = currentMonth[0].getMonth().getDisplayName(TextStyle.FULL, Locale.getDefault()) + " " + currentMonth[0].getYear();
+            monthLabel.setText(monthText);
+            daysPanel.removeAll();
+            LocalDate firstOfMonth = currentMonth[0].atDay(1);
+            int startOffset = (firstOfMonth.getDayOfWeek().getValue() + 6) % 7; // Monday=0..Sunday=6
+            for (int i = 0; i < startOffset; i++) {
+                daysPanel.add(new JLabel(""));
+            }
+            int length = currentMonth[0].lengthOfMonth();
+            for (int d = 1; d <= length; d++) {
+                LocalDate date = currentMonth[0].atDay(d);
+                JButton dayBtn = new JButton(String.valueOf(d));
+                dayBtn.setMargin(new Insets(2, 2, 2, 2));
+                dayBtn.addActionListener(e -> {
+                    setFilterDate(targetField, date);
+                    dialog.dispose();
+                });
+                daysPanel.add(dayBtn);
+            }
+            daysPanel.revalidate();
+            daysPanel.repaint();
+        };
+        prevMonth.addActionListener(e -> {
+            currentMonth[0] = currentMonth[0].minusMonths(1);
+            render.run();
+        });
+        nextMonth.addActionListener(e -> {
+            currentMonth[0] = currentMonth[0].plusMonths(1);
+            render.run();
+        });
+        render.run();
+        dialog.setVisible(true);
+    }
+
+    private JPanel buildWeekHeader() {
+        JPanel header = new JPanel(new GridLayout(1, 7, 4, 4));
+        for (int i = 1; i <= 7; i++) {
+            java.time.DayOfWeek dow = java.time.DayOfWeek.of(i == 7 ? 7 : i);
+            JLabel lbl = new JLabel(dow.getDisplayName(TextStyle.SHORT, Locale.getDefault()), SwingConstants.CENTER);
+            lbl.setFont(lbl.getFont().deriveFont(Font.BOLD, 11f));
+            header.add(lbl);
+        }
+        return header;
+    }
+
+    private void setFilterDate(JTextField field, LocalDate date) {
+        field.setText(date.format(filterFormatter));
+    }
+
+    private LocalDate parseFilterDate(JTextField field) {
+        try {
+            String text = field.getText().trim();
+            if (text.isEmpty()) {
+                return null;
+            }
+            return LocalDate.parse(text, filterFormatter);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private String formatCustomer(Customer c) {
+        return c.getId() + " | " + c.getDisplayName() +
+                " | user:" + safe(c.getUsername()) +
+                " | email:" + safe(c.getEmail()) +
+                " | phone:" + safe(c.getPhone()) +
+                " | tc:" + safe(c.getNationalId()) +
+                " | active:" + (c.isActive() ? "Y" : "N");
+    }
+
+    private String formatRoom(Room room) {
+        return room.getId() + " | room " + safe(room.getRoomNumber()) +
+                " | type:" + safe(room.getType()) +
+                " | cap:" + room.getCapacity() +
+                " | status:" + safe(room.getStatus()) +
+                " | price:" + room.getPricePerNight();
+    }
+
+    private ListCellRenderer<String> createCustomerRenderer() {
+        return (list, value, index, isSelected, cellHasFocus) -> {
+            String[] parts = value == null ? new String[0] : value.split("\\|");
+            String name = part(parts, 1);
+            String username = part(parts, 2).replace("user:", "").trim();
+            String email = part(parts, 3).replace("email:", "").trim();
+            String phone = part(parts, 4).replace("phone:", "").trim();
+            String nationalId = part(parts, 5).replace("tc:", "").trim();
+            String active = part(parts, 6).replace("active:", "").replace("active=", "").trim();
+            boolean isActive = active.equalsIgnoreCase("y") || active.equalsIgnoreCase("yes") || active.equalsIgnoreCase("true") || active.equalsIgnoreCase("active");
+
+            JPanel row = new JPanel(new BorderLayout(6, 4));
+            row.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(235, 235, 235)),
+                    BorderFactory.createEmptyBorder(8, 10, 8, 10)
+            ));
+            row.setOpaque(true);
+            row.setBackground(isSelected ? list.getSelectionBackground() : list.getBackground());
+
+            JLabel title = new JLabel(name + (username.isBlank() ? "" : " (" + username + ")"));
+            title.setFont(list.getFont().deriveFont(Font.BOLD));
+            title.setForeground(isSelected ? list.getSelectionForeground() : list.getForeground());
+
+            JLabel emailLabel = new JLabel("Email: " + (email.isBlank() ? "-" : email));
+            emailLabel.setForeground(isSelected ? list.getSelectionForeground() : new Color(70, 70, 70));
+
+            JLabel phoneLabel = new JLabel("Phone: " + (phone.isBlank() ? "-" : phone));
+            phoneLabel.setForeground(isSelected ? list.getSelectionForeground() : new Color(70, 70, 70));
+
+            JLabel idLabel = new JLabel("TC: " + (nationalId.isBlank() ? "-" : nationalId));
+            idLabel.setForeground(isSelected ? list.getSelectionForeground() : new Color(110, 110, 110));
+
+            JLabel activeLabel = new JLabel(isActive ? "Active" : "Inactive");
+            Color statusColor = isActive ? new Color(0, 115, 86) : new Color(150, 33, 33);
+            activeLabel.setForeground(isSelected ? list.getSelectionForeground() : statusColor);
+
+            JPanel topLine = new JPanel(new BorderLayout());
+            topLine.setOpaque(false);
+            topLine.add(title, BorderLayout.WEST);
+            topLine.add(activeLabel, BorderLayout.EAST);
+
+            JPanel middleLine = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+            middleLine.setOpaque(false);
+            middleLine.add(emailLabel);
+            middleLine.add(new JLabel("\u2022"));
+            middleLine.add(phoneLabel);
+
+            JPanel bottomLine = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+            bottomLine.setOpaque(false);
+            bottomLine.add(idLabel);
+
+            row.add(topLine, BorderLayout.NORTH);
+            row.add(middleLine, BorderLayout.CENTER);
+            row.add(bottomLine, BorderLayout.SOUTH);
+            return row;
+        };
+    }
+
+    private ListCellRenderer<String> createRoomRenderer() {
+        return (list, value, index, isSelected, cellHasFocus) -> {
+            String[] parts = value == null ? new String[0] : value.split("\\|");
+            String roomNumber = part(parts, 1).replace("room", "").trim();
+            String type = part(parts, 2).replace("type:", "").trim();
+            String capacity = part(parts, 3).replace("cap:", "").trim();
+            String status = part(parts, 4).replace("status:", "").trim();
+            String price = part(parts, 5).replace("price:", "").trim();
+
+            JPanel row = new JPanel(new BorderLayout(6, 4));
+            row.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(235, 235, 235)),
+                    BorderFactory.createEmptyBorder(8, 10, 8, 10)
+            ));
+            row.setOpaque(true);
+            row.setBackground(isSelected ? list.getSelectionBackground() : list.getBackground());
+
+            JLabel title = new JLabel("Room " + roomNumber + (type.isBlank() ? "" : " \u2022 " + type));
+            title.setFont(list.getFont().deriveFont(Font.BOLD));
+            title.setForeground(isSelected ? list.getSelectionForeground() : list.getForeground());
+
+            JLabel capacityLabel = new JLabel("Capacity: " + (capacity.isBlank() ? "-" : capacity));
+            capacityLabel.setForeground(isSelected ? list.getSelectionForeground() : new Color(70, 70, 70));
+
+            JLabel priceLabel = new JLabel("Price/Night: " + price);
+            priceLabel.setForeground(isSelected ? list.getSelectionForeground() : new Color(70, 70, 70));
+
+            JLabel statusLabel = new JLabel(status.isBlank() ? "status unknown" : status);
+            String statusLower = status.toLowerCase();
+            Color statusColor = statusLower.contains("available") ? new Color(0, 115, 86)
+                    : statusLower.contains("reserve") ? new Color(181, 128, 30)
+                    : statusLower.contains("maintenance") ? new Color(31, 90, 150)
+                    : new Color(110, 110, 110);
+            statusLabel.setForeground(isSelected ? list.getSelectionForeground() : statusColor);
+
+            JPanel topLine = new JPanel(new BorderLayout());
+            topLine.setOpaque(false);
+            topLine.add(title, BorderLayout.WEST);
+            topLine.add(statusLabel, BorderLayout.EAST);
+
+            JPanel middleLine = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+            middleLine.setOpaque(false);
+            middleLine.add(capacityLabel);
+            middleLine.add(new JLabel("\u2022"));
+            middleLine.add(priceLabel);
+
+            row.add(topLine, BorderLayout.NORTH);
+            row.add(middleLine, BorderLayout.CENTER);
+            return row;
+        };
     }
 
     private ListCellRenderer<String> createStaffReservationRenderer() {
@@ -587,6 +1066,10 @@ public class StaffPanel extends JFrame {
             row.add(bottomLine, BorderLayout.SOUTH);
             return row;
         };
+    }
+
+    private String safe(String value) {
+        return value == null || value.isBlank() ? "-" : value;
     }
 
     private String part(String[] parts, int index) {
