@@ -23,6 +23,7 @@ kuralları temel alınarak tasarlanmıştır.
 ---
 
 ## Klasor Dallanmasi
+```text
 .
 ├── pom.xml
 ├── README.md
@@ -45,6 +46,7 @@ kuralları temel alınarak tasarlanmıştır.
 │       │   └── util
 │       └── resources
 │           └── schema.sql
+```
 
 ---
 
