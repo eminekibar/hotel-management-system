@@ -56,7 +56,7 @@ Bu proje, Apache Maven kullanılarak derlenen bir Java masaüstü uygulamasıdı
 
 ---
 
-##  Maven Bağımlılıkları (pom.xml)
+##  Maven Bağımlılıkları 
 
 | Kütüphane | GroupId | Sürüm | Amaç |
 |----------|--------|-------|------|
