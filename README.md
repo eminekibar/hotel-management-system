@@ -103,8 +103,8 @@ Proje, yüksek modülerlik, test edilebilirlik ve sürdürülebilirlik hedeflene
 
 | Kalıp | Uygulama Yeri | Amaç |
 |-----|--------------|------|
-| State | `reservationState` | Rezervasyon yaşam döngüsünün yönetimi |
-| Strategy | `pricingStrategy` | Esnek fiyatlandırma |
+| State | `ReservationState` | Rezervasyon yaşam döngüsünün yönetimi |
+| Strategy | `PricingStrategy` | Esnek fiyatlandırma |
 | Observer | `NotificationObserver` | Bildirim mekanizması |
 | Singleton | `DatabaseConnection` | Tek veritabanı bağlantısı |
 | Factory | `RoomFactory` | Oda tiplerinin merkezi oluşturulması |
