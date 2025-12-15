@@ -51,7 +51,7 @@ kuralları temel alınarak tasarlanmıştır.
 ##  Proje Özelliklerine Genel Bakış
 
 **Mimari**  
-Katmanlı Mimari (DAO, Service, UI) ve Model-View-Controller (MVC) ayrımı temel alınmıştır.
+Katmanlı Mimari (DAO, Service, UI) kullanılmıştır.
 
 **Tasarım Kalıpları**  
 Strategy, State, Observer, Singleton, Factory ve Builder tasarım kalıpları etkin şekilde
@@ -103,9 +103,9 @@ Proje, yüksek modülerlik, test edilebilirlik ve sürdürülebilirlik hedeflene
 
 | Kalıp | Uygulama Yeri | Amaç |
 |-----|--------------|------|
-| State | `state`, `Reservation` | Rezervasyon yaşam döngüsünün yönetimi |
-| Strategy | `strategy`, `ReservationService` | Esnek fiyatlandırma |
-| Observer | `observer` | Bildirim mekanizması |
+| State | `reservationState` | Rezervasyon yaşam döngüsünün yönetimi |
+| Strategy | `pricingStrategy` | Esnek fiyatlandırma |
+| Observer | `NotificationObserver` | Bildirim mekanizması |
 | Singleton | `DatabaseConnection` | Tek veritabanı bağlantısı |
 | Factory | `RoomFactory` | Oda tiplerinin merkezi oluşturulması |
 | Builder | `CustomerBuilder` | Karmaşık nesne oluşturma |
