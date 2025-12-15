@@ -204,6 +204,7 @@ Terminal üzerinden, pom.xml dosyasının bulunduğu proje kök dizinine geçin:
 
 ```bash
 cd hotel-management-system
+```
 
 2. Projeyi derleyin ve bağımlılıkları indirin
 
