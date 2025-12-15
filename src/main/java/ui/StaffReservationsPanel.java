@@ -16,6 +16,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Supplier;
 
 public class StaffReservationsPanel extends JPanel {
 
@@ -34,8 +35,8 @@ public class StaffReservationsPanel extends JPanel {
     private final JTextField reservationEndFilter = new JTextField();
     private final DateTimeFormatter filterFormatter = DateTimeFormatter.ISO_LOCAL_DATE;
 
-    private final JTextField resStartDateField = new JTextField("2024-12-01");
-    private final JTextField resEndDateField = new JTextField("2024-12-05");
+    private final JTextField resStartDateField = new JTextField();
+    private final JTextField resEndDateField = new JTextField();
     private final JComboBox<String> resRoomTypeBox = new JComboBox<>(new String[]{"standard", "suite", "family"});
     private final JSpinner resCapacitySpinner = new JSpinner(new SpinnerNumberModel(2, 1, 6, 1));
     private final DefaultListModel<String> resSearchRoomsModel = new DefaultListModel<>();
@@ -59,6 +60,7 @@ public class StaffReservationsPanel extends JPanel {
         this.customerService = customerService;
         this.roomsRefresher = roomsRefresher;
         buildUi();
+        setDefaultReservationDates();
     }
 
     private void buildUi() {
@@ -157,13 +159,24 @@ public class StaffReservationsPanel extends JPanel {
         gbc.gridx = 0;
         form.add(new JLabel("Start Date"), gbc);
         gbc.gridx = 1;
-        form.add(resStartDateField, gbc);
+        resStartDateField.setEditable(false);
+        resStartDateField.setColumns(10);
+        form.add(wrapWithDatePicker(resStartDateField, () -> LocalDate.now()), gbc);
 
         gbc.gridy++;
         gbc.gridx = 0;
         form.add(new JLabel("End Date"), gbc);
         gbc.gridx = 1;
-        form.add(resEndDateField, gbc);
+        resEndDateField.setEditable(false);
+        resEndDateField.setColumns(10);
+        form.add(wrapWithDatePicker(resEndDateField, () -> {
+            LocalDate start = parseReservationDate(resStartDateField, null);
+            LocalDate today = LocalDate.now();
+            if (start == null || start.isBefore(today)) {
+                return today.plusDays(1);
+            }
+            return start.plusDays(1);
+        }), gbc);
 
         gbc.gridy++;
         gbc.gridx = 0;
@@ -262,8 +275,19 @@ public class StaffReservationsPanel extends JPanel {
         try {
             String type = (String) resRoomTypeBox.getSelectedItem();
             int capacity = (Integer) resCapacitySpinner.getValue();
-            LocalDate start = LocalDate.parse(resStartDateField.getText().trim());
-            LocalDate end = LocalDate.parse(resEndDateField.getText().trim());
+            LocalDate start = parseReservationDate(resStartDateField, "Start Date");
+            LocalDate end = parseReservationDate(resEndDateField, "End Date");
+            if (start == null || end == null) {
+                return;
+            }
+            if (!end.isAfter(start)) {
+                JOptionPane.showMessageDialog(owner, "End date must be after start date.");
+                return;
+            }
+            if (start.isBefore(LocalDate.now())) {
+                JOptionPane.showMessageDialog(owner, "Start date cannot be in the past.");
+                return;
+            }
             resSearchRooms = roomService.searchWithAvailability(type, capacity, start, end);
             resSearchRoomsModel.clear();
             for (model.room.RoomAvailabilityInfo info : resSearchRooms) {
@@ -291,8 +315,19 @@ public class StaffReservationsPanel extends JPanel {
                 return;
             }
             Room room = info.getRoom();
-            LocalDate start = LocalDate.parse(resStartDateField.getText().trim());
-            LocalDate end = LocalDate.parse(resEndDateField.getText().trim());
+            LocalDate start = parseReservationDate(resStartDateField, "Start Date");
+            LocalDate end = parseReservationDate(resEndDateField, "End Date");
+            if (start == null || end == null) {
+                return;
+            }
+            if (!end.isAfter(start)) {
+                JOptionPane.showMessageDialog(owner, "End date must be after start date.");
+                return;
+            }
+            if (start.isBefore(LocalDate.now())) {
+                JOptionPane.showMessageDialog(owner, "Start date cannot be in the past.");
+                return;
+            }
             Reservation reservation = reservationService.createReservation(selectedCustomerForReservation, room, start, end, staff.getId());
             JOptionPane.showMessageDialog(owner, "Reservation created: " + reservation.getReservationId());
             refreshReservations();
@@ -305,34 +340,51 @@ public class StaffReservationsPanel extends JPanel {
     }
 
     private JPanel wrapWithDatePicker(JTextField field) {
+        return wrapWithDatePicker(field, null);
+    }
+
+    private JPanel wrapWithDatePicker(JTextField field, Supplier<LocalDate> minDateSupplier) {
         field.setColumns(9);
         JButton button = new JButton("\uD83D\uDCC5");
         button.setMargin(new Insets(2, 6, 2, 6));
         button.setToolTipText("Pick a date");
-        button.addActionListener(e -> openCalendar(field));
+        button.addActionListener(e -> {
+            LocalDate minDate = minDateSupplier == null ? null : minDateSupplier.get();
+            openCalendar(field, minDate);
+        });
         JPanel wrapper = new JPanel(new BorderLayout(4, 0));
         wrapper.add(field, BorderLayout.CENTER);
         wrapper.add(button, BorderLayout.EAST);
         return wrapper;
     }
 
-    private void openCalendar(JTextField targetField) {
-        LocalDate baseDate = parseFilterDate(targetField);
+    private void openCalendar(JTextField targetField, LocalDate minDate) {
+        LocalDate baseDate = parseReservationDate(targetField, null);
+        LocalDate today = LocalDate.now();
         if (baseDate == null) {
-            baseDate = LocalDate.now();
+            baseDate = minDate != null ? minDate : today;
+        }
+        if (minDate != null && baseDate.isBefore(minDate)) {
+            baseDate = minDate;
         }
         JDialog dialog = new JDialog(owner, "Select date", true);
         dialog.setLayout(new BorderLayout(8, 8));
         JPanel monthNav = new JPanel(new BorderLayout());
+        JButton prevYear = new JButton("<<");
         JButton prevMonth = new JButton("<");
         JButton nextMonth = new JButton(">");
+        JButton nextYear = new JButton(">>");
         JLabel monthLabel = new JLabel("", SwingConstants.CENTER);
         monthLabel.setFont(monthLabel.getFont().deriveFont(Font.BOLD, 13f));
-        JPanel navButtons = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
-        navButtons.add(prevMonth);
-        navButtons.add(monthLabel);
-        navButtons.add(nextMonth);
-        monthNav.add(navButtons, BorderLayout.CENTER);
+        JPanel west = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        west.add(prevYear);
+        west.add(prevMonth);
+        JPanel east = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        east.add(nextMonth);
+        east.add(nextYear);
+        monthNav.add(west, BorderLayout.WEST);
+        monthNav.add(monthLabel, BorderLayout.CENTER);
+        monthNav.add(east, BorderLayout.EAST);
 
         JPanel daysPanel = new JPanel(new GridLayout(0, 7, 4, 4));
         JPanel container = new JPanel(new BorderLayout(0, 6));
@@ -359,10 +411,14 @@ public class StaffReservationsPanel extends JPanel {
                 LocalDate date = currentMonth[0].atDay(d);
                 JButton dayBtn = new JButton(String.valueOf(d));
                 dayBtn.setMargin(new Insets(2, 2, 2, 2));
-                dayBtn.addActionListener(e -> {
-                    setFilterDate(targetField, date);
-                    dialog.dispose();
-                });
+                boolean enabled = minDate == null || !date.isBefore(minDate);
+                dayBtn.setEnabled(enabled);
+                if (enabled) {
+                    dayBtn.addActionListener(e -> {
+                        setReservationDate(targetField, date);
+                        dialog.dispose();
+                    });
+                }
                 daysPanel.add(dayBtn);
             }
             daysPanel.revalidate();
@@ -374,6 +430,14 @@ public class StaffReservationsPanel extends JPanel {
         });
         nextMonth.addActionListener(e -> {
             currentMonth[0] = currentMonth[0].plusMonths(1);
+            render.run();
+        });
+        prevYear.addActionListener(e -> {
+            currentMonth[0] = currentMonth[0].minusYears(1);
+            render.run();
+        });
+        nextYear.addActionListener(e -> {
+            currentMonth[0] = currentMonth[0].plusYears(1);
             render.run();
         });
         render.run();
@@ -391,11 +455,11 @@ public class StaffReservationsPanel extends JPanel {
         return header;
     }
 
-    private void setFilterDate(JTextField field, LocalDate date) {
+    private void setReservationDate(JTextField field, LocalDate date) {
         field.setText(date.format(filterFormatter));
     }
 
-    private LocalDate parseFilterDate(JTextField field) {
+    private LocalDate parseReservationDate(JTextField field, String label) {
         try {
             String text = field.getText().trim();
             if (text.isEmpty()) {
@@ -403,8 +467,18 @@ public class StaffReservationsPanel extends JPanel {
             }
             return LocalDate.parse(text, filterFormatter);
         } catch (Exception e) {
+            if (label != null) {
+                JOptionPane.showMessageDialog(owner, label + " is not valid. Use yyyy-MM-dd");
+            }
             return null;
         }
+    }
+
+    private void setDefaultReservationDates() {
+        LocalDate start = LocalDate.now().plusDays(1);
+        LocalDate end = start.plusDays(2);
+        setReservationDate(resStartDateField, start);
+        setReservationDate(resEndDateField, end);
     }
 
     private void loadCustomerForReservation() {
