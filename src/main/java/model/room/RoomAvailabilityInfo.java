@@ -2,9 +2,6 @@ package model.room;
 
 import model.reservation.Reservation;
 
-/**
- * Wrapper for room availability information for a given date range.
- */
 public class RoomAvailabilityInfo {
     private final Room room;
     private final String availabilityLabel;

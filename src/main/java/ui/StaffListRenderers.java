@@ -2,6 +2,7 @@ package ui;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Locale;
 
 public final class StaffListRenderers {
 
@@ -277,6 +278,66 @@ public final class StaffListRenderers {
 
             row.add(topLine, BorderLayout.NORTH);
             row.add(middleLine, BorderLayout.CENTER);
+            row.add(bottomLine, BorderLayout.SOUTH);
+            return row;
+        };
+    }
+
+    public static ListCellRenderer<String> createAvailableRoomRenderer() {
+        return (list, value, index, isSelected, cellHasFocus) -> {
+            String[] parts = value == null ? new String[0] : value.split("\\|");
+            String roomNo = part(parts, 0).replace("room:", "").trim();
+            String type = part(parts, 1).replace("type:", "").trim();
+            String capacity = part(parts, 2).replace("cap:", "").replace("capacity:", "").trim();
+            String price = part(parts, 3).replace("price:", "").trim();
+            String availability = part(parts, 4).replace("availability:", "").trim();
+            String bookable = part(parts, 5).replace("bookable:", "").trim();
+
+            JPanel row = new JPanel(new BorderLayout(6, 4));
+            row.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(235, 235, 235)),
+                    BorderFactory.createEmptyBorder(8, 10, 8, 10)
+            ));
+            row.setOpaque(true);
+            row.setBackground(isSelected ? list.getSelectionBackground() : list.getBackground());
+
+            JLabel title = new JLabel("Room " + roomNo + (type.isBlank() ? "" : " \u2022 " + type));
+            title.setFont(list.getFont().deriveFont(Font.BOLD));
+            title.setForeground(isSelected ? list.getSelectionForeground() : list.getForeground());
+
+            JLabel priceLabel = new JLabel(price.isBlank() ? "" : price);
+            priceLabel.setForeground(isSelected ? list.getSelectionForeground() : new Color(60, 60, 60));
+
+            JLabel capacityLabel = new JLabel(capacity.isBlank() ? "" : "Capacity: " + capacity);
+            capacityLabel.setForeground(isSelected ? list.getSelectionForeground() : new Color(70, 70, 70));
+
+            String availabilityText = availability.isBlank()
+                    ? (bookable.equalsIgnoreCase("true") ? "Available" : "Unavailable")
+                    : availability;
+            JLabel availabilityLabel = new JLabel(availabilityText);
+            String availLower = availabilityText.toLowerCase(Locale.ROOT);
+            Color statusColor = availLower.contains("unavailable") || availLower.contains("not available")
+                    ? new Color(150, 33, 33)
+                    : (availLower.contains("pending") || availLower.contains("hold") || availLower.contains("reserve"))
+                    ? new Color(181, 128, 30)
+                    : new Color(0, 115, 86);
+            availabilityLabel.setForeground(isSelected ? list.getSelectionForeground() : statusColor);
+            availabilityLabel.setFont(list.getFont().deriveFont(list.getFont().getSize2D() - 1f));
+
+            JPanel topLine = new JPanel(new BorderLayout());
+            topLine.setOpaque(false);
+            topLine.add(title, BorderLayout.WEST);
+            topLine.add(priceLabel, BorderLayout.EAST);
+
+            JPanel bottomLine = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+            bottomLine.setOpaque(false);
+            if (!capacityLabel.getText().isBlank()) {
+                bottomLine.add(capacityLabel);
+                bottomLine.add(new JLabel("\u2022"));
+            }
+            bottomLine.add(availabilityLabel);
+
+            row.add(topLine, BorderLayout.NORTH);
             row.add(bottomLine, BorderLayout.SOUTH);
             return row;
         };

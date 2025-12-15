@@ -4,15 +4,11 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-/**
- * Singleton database connection holder.
- */
 public final class DatabaseConnection {
 
     private static DatabaseConnection instance;
     private Connection connection;
 
-    // Use explicit IPv4 to avoid IPv6/localhost binding issues on MariaDB
     private static final String URL = "jdbc:mysql://127.0.0.1:3307/hotel_db?useSSL=false&serverTimezone=UTC";
     private static final String USER = "root";
     private static final String PASSWORD = "";

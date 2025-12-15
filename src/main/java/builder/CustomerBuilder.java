@@ -2,9 +2,6 @@ package builder;
 
 import model.user.Customer;
 
-/**
- * Thin wrapper to expose Customer.Builder from a dedicated package.
- */
 public class CustomerBuilder {
     private final Customer.Builder builder = Customer.builder();
 

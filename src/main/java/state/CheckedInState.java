@@ -10,7 +10,6 @@ public class CheckedInState implements ReservationState {
 
     @Override
     public void onCheckIn(Reservation reservation) {
-        // already checked in
     }
 
     @Override

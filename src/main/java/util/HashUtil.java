@@ -5,9 +5,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
 
-/**
- * Lightweight SHA-256 hashing helper for passwords.
- */
+
+
+
 public final class HashUtil {
 
     private HashUtil() {

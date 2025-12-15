@@ -81,12 +81,9 @@ public class StaffCustomersPanel extends JPanel {
         deactivate.addActionListener(e -> deactivateCustomer(list.getSelectedIndex()));
         JButton refresh = new JButton("Refresh List");
         refresh.addActionListener(e -> refreshCustomers());
-        JButton toCreate = new JButton("Create New");
-        toCreate.addActionListener(e -> tabs.setSelectedIndex(1));
         actions.add(details);
         actions.add(deactivate);
         actions.add(refresh);
-        actions.add(toCreate);
         panel.add(actions, BorderLayout.SOUTH);
         return panel;
     }
@@ -197,12 +194,6 @@ public class StaffCustomersPanel extends JPanel {
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(owner, "Failed to deactivate customer: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
-    }
-
-    private void openCustomerDialog() {
-        CustomerRegistrationDialog dialog = new CustomerRegistrationDialog(owner, customerService);
-        dialog.setVisible(true);
-        refreshCustomers();
     }
 
     private void openCustomerDetails(int index) {

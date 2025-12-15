@@ -169,7 +169,6 @@ public class CustomerDAO {
     }
 
     public void deleteAccount(int id) {
-        // Soft delete: keep historical links (reservations) and only deactivate the account.
         try {
             deactivate(id);
         } catch (RuntimeException e) {

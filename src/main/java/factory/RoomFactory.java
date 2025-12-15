@@ -16,7 +16,7 @@ public final class RoomFactory {
             case "standard"-> new StandardRoom();
             case "suite" -> new SuiteRoom();
             case "family" -> new FamilyRoom();
-            default -> new StandardRoom(); // fallback to avoid query failures on unknown types
+            default -> new StandardRoom(); 
         };
     }
 }

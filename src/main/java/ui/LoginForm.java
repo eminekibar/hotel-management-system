@@ -67,7 +67,7 @@ public class LoginForm extends JFrame {
 
         Staff staff = authService.loginStaff(identifier, password);
         if (staff != null) {
-            new StaffPanel(staff); // StaffPanel already handles admin role for "admin" user
+            new StaffPanel(staff); 
             dispose();
             return;
         }

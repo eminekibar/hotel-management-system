@@ -133,7 +133,7 @@ public class StaffReservationsPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = 0;
 
-        form.add(new JLabel("Customer (id/name surname/username)"), gbc);
+        form.add(new JLabel("Customer (username / email / national ID)"), gbc);
         gbc.gridx = 1;
         gbc.weightx = 1;
         form.add(resCustomerIdentifierField, gbc);
@@ -200,6 +200,7 @@ public class StaffReservationsPanel extends JPanel {
 
         JList<String> searchRoomsList = new JList<>(resSearchRoomsModel);
         searchRoomsList.setVisibleRowCount(6);
+        searchRoomsList.setCellRenderer(StaffListRenderers.createAvailableRoomRenderer());
         JScrollPane roomsScroll = new JScrollPane(searchRoomsList);
         roomsScroll.setBorder(BorderFactory.createTitledBorder("Available Rooms"));
 
@@ -291,8 +292,7 @@ public class StaffReservationsPanel extends JPanel {
             resSearchRooms = roomService.searchWithAvailability(type, capacity, start, end);
             resSearchRoomsModel.clear();
             for (model.room.RoomAvailabilityInfo info : resSearchRooms) {
-                Room room = info.getRoom();
-                resSearchRoomsModel.addElement(room.getRoomNumber() + " | " + room.getType() + " | cap " + room.getCapacity() + " | $" + room.getPricePerNight() + " | " + info.getAvailabilityLabel());
+                resSearchRoomsModel.addElement(formatAvailableRoom(info));
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(owner, "Invalid room search data: " + e.getMessage());
@@ -474,6 +474,20 @@ public class StaffReservationsPanel extends JPanel {
         }
     }
 
+    private String formatAvailableRoom(model.room.RoomAvailabilityInfo info) {
+        Room room = info.getRoom();
+        return "room:" + safe(room.getRoomNumber()) +
+                " | type:" + safe(room.getType()) +
+                " | cap:" + room.getCapacity() +
+                " | price:$" + room.getPricePerNight() +
+                " | availability:" + safe(info.getAvailabilityLabel()) +
+                " | bookable:" + info.isBookable();
+    }
+
+    private String safe(String value) {
+        return value == null || value.isBlank() ? "-" : value;
+    }
+
     private void setDefaultReservationDates() {
         LocalDate start = LocalDate.now().plusDays(1);
         LocalDate end = start.plusDays(2);
@@ -484,7 +498,7 @@ public class StaffReservationsPanel extends JPanel {
     private void loadCustomerForReservation() {
         String identifier = resCustomerIdentifierField.getText().trim();
         if (identifier.isBlank()) {
-            JOptionPane.showMessageDialog(owner, "Enter username/email/TC to load customer.");
+            JOptionPane.showMessageDialog(owner, "Enter username / email / national ID to load customer.");
             return;
         }
         try {
