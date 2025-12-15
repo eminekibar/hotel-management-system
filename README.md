@@ -24,27 +24,27 @@ kuralları temel alınarak tasarlanmıştır.
 
 ## Klasor Dallanmasi
 .
-|-- pom.xml
-|-- README.md
-|-- src
-|   `-- main
-|       |-- java
-|       |   |-- builder/
-|       |   |-- dao/
-|       |   |-- database/
-|       |   |-- factory/
-|       |   |-- model/
-|       |   |   |-- reservation/
-|       |   |   |-- room/
-|       |   |   `-- user/
-|       |   |-- observer/
-|       |   |-- service/
-|       |   |-- state/
-|       |   |-- strategy/
-|       |   |-- ui/
-|       |   `-- util/
-|       `-- resources
-|           `-- schema.sql
+├── pom.xml
+├── README.md
+├── src
+│   └── main
+│       ├── java
+│       │   ├── builder
+│       │   ├── dao
+│       │   ├── database
+│       │   ├── factory
+│       │   ├── model
+│       │   │   ├── reservation
+│       │   │   ├── room
+│       │   │   └── user
+│       │   ├── observer
+│       │   ├── service
+│       │   ├── state
+│       │   ├── strategy
+│       │   ├── ui
+│       │   └── util
+│       └── resources
+│           └── schema.sql
 
 ---
 
