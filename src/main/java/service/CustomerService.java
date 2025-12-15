@@ -37,6 +37,7 @@ public class CustomerService {
                 .passwordHash(passwordHash)
                 .build();
         customerDAO.create(customer);
+        notifyAdmins("New customer registered: #" + customer.getId() + " (" + customer.getUsername() + ")");
         return customer;
     }
 
