@@ -156,92 +156,121 @@ Proje, yüksek modülerlik, test edilebilirlik ve sürdürülebilirlik hedeflene
 ### Ön Gereksinimler
 - Java Development Kit (JDK) 17+
 - Apache Maven
-- MySQL / MariaDB
+- MySQL 
 
 ### Veritabanı Kurulumu
 
-`DatabaseConnection.java` dosyasındaki bağlantı bilgilerini kontrol edin:
+Uygulama, MySQL uyumlu bir veritabanı kullanmaktadır.
 
-```java
-private static final String URL =
-    "jdbc:mysql://127.0.0.1:3307/hotel_db?useSSL=false&serverTimezone=UTC";
-private static final String USER = "root";
-private static final String PASSWORD = "";
+Proje içerisinde yer alan `DatabaseConnection.java` dosyasında;
+- veritabanı adresi,
+- port numarası,
+- kullanıcı adı
+- ve şifre bilgileri
+
+kontrol edilmelidir.
+
+Ardından proje kök dizininde bulunan `schema.sql` dosyası çalıştırılarak
+gerekli tablolar oluşturulmalıdır.
+
+---
+
+### Projeyi Çalıştırma
+
+Veritabanı bağlantısı doğru şekilde yapılandırıldıktan sonra proje, Apache Maven
+kullanılarak derlenip çalıştırılabilir.
+Aşağıdaki adımlar, projenin derlenmesini ve ana sınıfın (ui.App) başlatılmasını sağlar.
+
+İzlenecek Adımlar
+
+1. Proje dizinine girin
+
+Terminal üzerinden, pom.xml dosyasının bulunduğu proje kök dizinine geçin:
+
+cd hotel-management-system
 
 
-###📋 Proje Diyagramları ve Detaylı Açıklamaları ###
+2. Projeyi derleyin ve bağımlılıkları indirin
 
-1️⃣ Kullanım Senaryosu Diyagramı (Use Case Diagram)
+Projeyi ilk kez çalıştırırken veya bağımlılıkları güncellediğinizde aşağıdaki komutu çalıştırın:
 
-Bu diyagram, sistemin sunduğu tüm işlevleri ve bu işlevlere erişebilen aktörleri (Customer, Staff ve Admin) görselleştirir.
-Ayrıca roller arasındaki hiyerarşiyi (Admin rolünün Staff’tan türemesi) ve kullanıcıların gerçekleştirebileceği temel işlemleri açıkça göstermektedir.
+mvn clean install
 
-Örnek işlemler:
 
-View Profile
+3. Uygulamayı başlatın
 
-Create Reservation
+Ana sınıf (ui.App) Maven aracılığıyla çalıştırılır:
 
-Check-in / Check-out
+mvn exec:java
 
-View Staff Accounts
+
+Uygulama başarıyla başlatıldığında, Java Swing tabanlı giriş ekranı açılacaktır.
+
+## 📋 Proje Diyagramları ve Detaylı Açıklamaları
+
+### 1️-Kullanım Senaryosu Diyagramı (Use Case Diagram)
+
+Bu diyagram, sistemde yer alan aktörleri (Customer, Staff ve Admin)
+ve bu aktörlerin gerçekleştirebileceği temel işlemleri göstermektedir.
+
+Ayrıca roller arasındaki hiyerarşik yapı
+(Admin rolünün Staff rolünden türemesi) açık bir şekilde ifade edilmektedir.
+
+Gerçekleştirilebilen başlıca işlemler:
+- Profil görüntüleme
+- Rezervasyon oluşturma
+- Check-in / Check-out işlemleri
+- Personel hesaplarını görüntüleme
 
 ![use_case_diagram](https://github.com/user-attachments/assets/e7fa0c37-73e4-429f-8d8d-a82b1d5539f8)
 
+---
 
-2️⃣ Sıralı İşlem Diyagramı (Sequence Diagram)
+### 2️- Sıralı İşlem Diyagramı (Sequence Diagram)
 
-Bu diyagram, sistemin en kritik iş akışlarından biri olan rezervasyon oluşturma sürecini detaylı olarak göstermektedir.
-Kullanıcı arayüzünden (BookStayPanel) başlayan isteğin, Service katmanları (RoomService, ReservationService) üzerinden nasıl ilerlediği adım adım açıklanır.
+Bu diyagram, rezervasyon oluşturma sürecinde sistem bileşenleri arasında
+gerçekleşen etkileşimi adım adım göstermektedir.
+
+Kullanıcı arayüzünden başlayan istek,
+Service katmanları üzerinden ilerleyerek
+iş kurallarının uygulanmasını sağlar.
 
 Bu süreçte:
+- Fiyat hesaplama işlemleri
+- Bildirim mekanizmaları
 
-Strategy Pattern → fiyat hesaplama
+belirli bir sıra dahilinde çalışmaktadır.
 
-Observer Pattern → bildirim gönderimi
+<img src="https://github.com/user-attachments/assets/83d57bd3-43c5-435e-baca-63a3de34496f" />
 
-mekanizmalarının hangi sırayla tetiklendiği net biçimde gösterilmektedir.
+---
 
-<img width="2135" height="937" alt="sequence-java" src="https://github.com/user-attachments/assets/83d57bd3-43c5-435e-baca-63a3de34496f" />
+### 3️- Sınıf Diyagramı (UML Class Diagram)
 
+Bu diyagram, sistemde yer alan temel Java sınıflarını
+ve sınıflar arasındaki ilişkileri göstermektedir.
 
+Diyagramda özellikle:
+- Kalıtım (is-a) ilişkileri
+- Nesneler arası ilişkilendirmeler (has-a)
+- Tasarım kalıplarının sınıflara yansıması
 
-
-
-
-
-3️⃣ Sınıf Diyagramı (UML Class Diagram)
-
-Bu diyagram, projenin nesne yönelimli mimarisini oluşturan temel Java sınıflarını ve aralarındaki ilişkileri göstermektedir.
-
-Öne çıkan noktalar:
-
-Kalıtım (is-a) ilişkileri
-
-İlişkilendirme (has-a) ilişkileri
-
-Builder Pattern’ın Customer sınıfındaki kullanımı
-
-State Pattern’ın Reservation sınıfındaki uygulanışı
+vurgulanmaktadır.
 
 ![class_diagram](https://github.com/user-attachments/assets/51c3ef35-268c-4053-8655-867bec6736a9)
 
+---
 
+### 4️- Varlık–İlişki Diyagramı (ER Diagram) / Veritabanı Şeması
 
+Bu diyagram, veritabanı tablolarının yapısını
+ve tablolar arasındaki ilişkileri göstermektedir.
 
-4️⃣ Varlık–İlişki Diyagramı (ER Diagram) / Veritabanı Şeması
-
-Bu diyagram, MySQL veritabanındaki tabloların yapısını, birincil/yabancı anahtarlarını ve tablolar arası ilişkileri göstermektedir.
-
-Özellikle:
-
-customers, staff, reservations ve reservation_actions tabloları
-
-Denetim (auditing) amacıyla kullanılan reservation_actions tablosu
-
-notifications tablosundaki polimorfik ilişki (müşteri veya personel ile ilişkilendirme)
-
-detaylı olarak vurgulanmıştır.
+Öne çıkan noktalar:
+- Kullanıcı ve personel tabloları
+- Rezervasyon kayıtları
+- İşlem geçmişini tutan denetim yapıları
+- Bildirim sistemi için kullanılan ilişkisel yapı
 
 ![database_schema_erd](https://github.com/user-attachments/assets/89a11c02-f7e7-41f5-b94d-5d5bdeab4086)
 
