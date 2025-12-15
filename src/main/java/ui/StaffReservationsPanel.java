@@ -133,7 +133,7 @@ public class StaffReservationsPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = 0;
 
-        form.add(new JLabel("Customer (username/email/TC)"), gbc);
+        form.add(new JLabel("Customer (id/name surname/username)"), gbc);
         gbc.gridx = 1;
         gbc.weightx = 1;
         form.add(resCustomerIdentifierField, gbc);
