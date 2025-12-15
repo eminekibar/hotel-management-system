@@ -3,13 +3,13 @@
 ## 👥 Ekip Üyeleri
 
 - **Mukadder Bölükbaşı**  
-  GitHub: https://github.com/kullaniciadi
+  GitHub: https://github.com/mukadderbolukbasi
 
 - **Emine Kibar**  
-  GitHub: https://github.com/kullaniciadi
+  GitHub: https://github.com/eminekibar
 
 - **Betül Yıldırım**  
-  GitHub: https://github.com/kullaniciadi
+  GitHub: https://github.com/betulyldrmm
 
 ---
 
@@ -35,7 +35,7 @@ kullanılmıştır.
 Kullanıcı parolaları SHA-256 algoritması ile hashlenerek saklanmaktadır.
 
 **Veritabanı**  
-MySQL / MariaDB kullanılarak JDBC üzerinden güçlü veri bütünlüğü ve ilişkisel yapı
+MySQL kullanılarak JDBC üzerinden güçlü veri bütünlüğü ve ilişkisel yapı
 sağlanmıştır.
 
 **Kullanıcı Arayüzü**  
@@ -51,7 +51,7 @@ Bu proje, Apache Maven kullanılarak derlenen bir Java masaüstü uygulamasıdı
 
 - **Java Sürümü:** Java SE 17  
 - **Yapılandırma Yönetimi:** Apache Maven 4.0.0  
-- **Veritabanı:** MySQL / MariaDB  
+- **Veritabanı:** MySQL 
 - **Kullanıcı Arayüzü:** Java Swing  
 
 ---
@@ -151,7 +151,7 @@ Proje, yüksek modülerlik, test edilebilirlik ve sürdürülebilirlik hedeflene
 
 ---
 
-## 🚀 Kurulum ve Çalıştırma
+##  Kurulum ve Çalıştırma
 
 ### Ön Gereksinimler
 - Java Development Kit (JDK) 17+
@@ -160,15 +160,17 @@ Proje, yüksek modülerlik, test edilebilirlik ve sürdürülebilirlik hedeflene
 
 ### Veritabanı Kurulumu
 
+`DatabaseConnection.java` dosyasındaki bağlantı bilgilerini kontrol edin:
+
 ```java
-private static final String URL = "jdbc:mysql://127.0.0.1:3307/hotel_db?useSSL=false&serverTimezone=UTC";
+private static final String URL =
+    "jdbc:mysql://127.0.0.1:3307/hotel_db?useSSL=false&serverTimezone=UTC";
 private static final String USER = "root";
 private static final String PASSWORD = "";
 
-### Projeyi çalıştırma
+### Projeyi Çalıştırma
 mvn clean install
 mvn exec:java
-
 
 
 1️⃣ Kullanım Senaryosu Diyagramı (Use Case Diagram)
