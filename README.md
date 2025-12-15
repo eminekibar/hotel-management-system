@@ -56,17 +56,6 @@ Bu proje, Apache Maven kullanılarak derlenen bir Java masaüstü uygulamasıdı
 
 ---
 
-##  Maven Bağımlılıkları 
-
-| Kütüphane | GroupId | Sürüm | Amaç |
-|----------|--------|-------|------|
-| MySQL Connector | mysql | 8.0.33 | JDBC üzerinden veritabanı bağlantısı |
-| SLF4J API | org.slf4j | 2.0.9 | Standart loglama arayüzü |
-| SLF4J Simple | org.slf4j | 2.0.9 | Runtime konsol loglama |
-| JUnit Jupiter | org.junit.jupiter | 5.10.0 | Birim testleri (test scope) |
-
----
-
 ##  Mimari ve Tasarım Kalıpları
 
 Proje, yüksek modülerlik, test edilebilirlik ve sürdürülebilirlik hedeflenerek güçlü bir
@@ -187,13 +176,14 @@ Aşağıdaki adımlar, projenin derlenmesini ve ana sınıfın (ui.App) başlat�
 
 Terminal üzerinden, pom.xml dosyasının bulunduğu proje kök dizinine geçin:
 
+```bash
 cd hotel-management-system
-
 
 2. Projeyi derleyin ve bağımlılıkları indirin
 
 Projeyi ilk kez çalıştırırken veya bağımlılıkları güncellediğinizde aşağıdaki komutu çalıştırın:
 
+```bash
 mvn clean install
 
 
@@ -201,6 +191,7 @@ mvn clean install
 
 Ana sınıf (ui.App) Maven aracılığıyla çalıştırılır:
 
+```bash
 mvn exec:java
 
 
