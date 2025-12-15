@@ -212,7 +212,7 @@ Projeyi ilk kez çalıştırırken veya bağımlılıkları güncellediğinizde 
 
 ```bash
 mvn clean install
-
+```
 
 3. Uygulamayı başlatın
 
@@ -220,7 +220,7 @@ Ana sınıf (ui.App) Maven aracılığıyla çalıştırılır:
 
 ```bash
 mvn exec:java
-
+```
 
 Uygulama başarıyla başlatıldığında, Java Swing tabanlı giriş ekranı açılacaktır.
 
