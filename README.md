@@ -1,6 +1,6 @@
-# 🏨 Hotel Management System (Otel Yönetim Sistemi)
+#  Hotel Management System (Otel Yönetim Sistemi)
 
-## 👥 Ekip Üyeleri
+##  Ekip Üyeleri
 
 - **Mukadder Bölükbaşı**  
   GitHub: https://github.com/mukadderbolukbasi
@@ -13,12 +13,38 @@
 
 ---
 
-## 📌 Proje Tanımı
+##  Proje Tanımı
 
 Bu proje, bir otel işletmesinin temel operasyonlarını yönetmek amacıyla geliştirilmiş
 kapsamlı bir **Java tabanlı masaüstü (Desktop) uygulamasıdır**.  
 Uygulama; temiz mimari prensipleri, katmanlı yapı, çeşitli tasarım kalıpları ve katı iş
 kuralları temel alınarak tasarlanmıştır.
+
+---
+
+## Klasor Dallanmasi
+.
+|-- pom.xml
+|-- README.md
+|-- src
+|   `-- main
+|       |-- java
+|       |   |-- builder/
+|       |   |-- dao/
+|       |   |-- database/
+|       |   |-- factory/
+|       |   |-- model/
+|       |   |   |-- reservation/
+|       |   |   |-- room/
+|       |   |   `-- user/
+|       |   |-- observer/
+|       |   |-- service/
+|       |   |-- state/
+|       |   |-- strategy/
+|       |   |-- ui/
+|       |   `-- util/
+|       `-- resources
+|           `-- schema.sql
 
 ---
 
