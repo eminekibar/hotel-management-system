@@ -168,10 +168,8 @@ private static final String URL =
 private static final String USER = "root";
 private static final String PASSWORD = "";
 
-### Projeyi Çalıştırma
-mvn clean install
-mvn exec:java
 
+###📋 Proje Diyagramları ve Detaylı Açıklamaları ###
 
 1️⃣ Kullanım Senaryosu Diyagramı (Use Case Diagram)
 
