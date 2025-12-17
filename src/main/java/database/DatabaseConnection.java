@@ -22,7 +22,12 @@ public final class DatabaseConnection {
             }
             this.connection = DriverManager.getConnection(URL, dbUser, dbPassword);
         } catch (SQLException e) {
-            throw new IllegalStateException("Failed to initialize database connection", e);
+            // özel durum fırlat
+            if (e.getErrorCode() == 1045) {
+                throw new IllegalStateException("Veritabanı bağlantısı başarısız: Geçersiz kullanıcı adı veya şifre.", e);
+            }
+            else
+                throw new IllegalStateException("Veritabanına bağlanırken hata oluştu.", e);
         }
     }
 
