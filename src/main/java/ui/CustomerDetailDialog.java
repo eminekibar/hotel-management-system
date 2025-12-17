@@ -106,7 +106,7 @@ public class CustomerDetailDialog extends JDialog {
             String statusLower = status.toLowerCase();
             Color statusColor = statusLower.contains("cancel") ? new Color(150, 33, 33)
                     : statusLower.contains("pending") ? new Color(181, 128, 30)
-                    : statusLower.contains("check") ? new Color(0, 115, 86);
+                    : new Color(0, 115, 86); // checked-in and others
             statusLabel.setForeground(isSelected ? list.getSelectionForeground() : statusColor);
 
             JLabel paymentLabel = new JLabel("Payment: " + payment);
