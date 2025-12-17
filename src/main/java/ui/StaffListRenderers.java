@@ -250,8 +250,7 @@ public final class StaffListRenderers {
             String statusLower = status.toLowerCase();
             Color statusColor = statusLower.contains("cancel") ? new Color(150, 33, 33)
                     : statusLower.contains("pending") ? new Color(181, 128, 30)
-                    : statusLower.contains("check") ? new Color(0, 115, 86)
-                    : new Color(0, 115, 86);
+                    : statusLower.contains("check") ? new Color(0, 115, 86);
             statusLabel.setForeground(isSelected ? list.getSelectionForeground() : statusColor);
 
             JLabel paymentLabel = new JLabel("Payment: " + payment);
