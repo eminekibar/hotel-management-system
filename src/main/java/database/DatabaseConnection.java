@@ -10,12 +10,17 @@ public final class DatabaseConnection {
     private Connection connection;
 
     private static final String URL = "jdbc:mysql://127.0.0.1:3307/hotel_db?useSSL=false&serverTimezone=UTC";
-    private static final String USER = "root";
-    private static final String PASSWORD = "";
 
     private DatabaseConnection() {
         try {
-            this.connection = DriverManager.getConnection(URL, USER, PASSWORD);
+            String dbUser = System.getenv("DB_USER");
+            String dbPassword = System.getenv("DB_PASSWORD");
+            if (dbUser == null || dbPassword == null) {
+                // UYARI: Burayı sadece test için kullan, gerçek şifreyi buraya yazma!
+                // SonarQube kızmasın diye burayı boş veya dummy bırakabilirsin şimdilik.
+                throw new RuntimeException("Veritabanı kullanıcı adı veya şifresi ortam değişkenlerinde bulunamadı! (DB_USER, DB_PASSWORD)");
+            }
+            this.connection = DriverManager.getConnection(URL, dbUser, dbPassword);
         } catch (SQLException e) {
             throw new IllegalStateException("Failed to initialize database connection", e);
         }
