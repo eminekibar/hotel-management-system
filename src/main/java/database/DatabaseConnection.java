@@ -15,19 +15,20 @@ public final class DatabaseConnection {
         try {
             String dbUser = System.getenv("DB_USER");
             String dbPassword = System.getenv("DB_PASSWORD");
-            if (dbUser == null || dbPassword == null) {
+            if (dbUser == null && dbPassword == null) {
                 // UYARI: Burayı sadece test için kullan, gerçek şifreyi buraya yazma!
                 // SonarQube kızmasın diye burayı boş veya dummy bırakabilirsin şimdilik.
                 throw new RuntimeException("Veritabanı kullanıcı adı veya şifresi ortam değişkenlerinde bulunamadı! (DB_USER, DB_PASSWORD)");
             }
+            else if (dbUser == null) {
+                throw new RuntimeException("Veritabanı kullanıcı adı ortam değişkeninde bulunamadı! (DB_USER)");
+            }
+            else if (dbPassword == null) {
+                throw new RuntimeException("Veritabanı şifresi ortam değişkeninde bulunamadı! (DB_PASSWORD)");
+            }
             this.connection = DriverManager.getConnection(URL, dbUser, dbPassword);
         } catch (SQLException e) {
-            // özel durum fırlat
-            if (e.getErrorCode() == 1045) {
-                throw new IllegalStateException("Veritabanı bağlantısı başarısız: Geçersiz kullanıcı adı veya şifre.", e);
-            }
-            else
-                throw new IllegalStateException("Veritabanına bağlanırken hata oluştu.", e);
+            throw new IllegalStateException("Failed to initialize database connection", e);
         }
     }
 
