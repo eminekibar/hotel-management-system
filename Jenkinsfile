@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    triggers {
-        pollSCM('H/1 * * * *') 
-    }
-
     tools {
         maven "M3" 
     }
@@ -17,7 +13,7 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                // DÜZELTME BURADA: 'branch: main' ekledik!
+                
                 git branch: 'main', url: 'https://github.com/eminekibar/hotel-management-system.git'
                 
                 sh "mvn -Dmaven.test.skip=true clean package"
