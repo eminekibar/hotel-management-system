@@ -68,7 +68,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>com.codex.hotel.Main</mainClass> 
+                            <mainClass>ui.Main</mainClass> 
                             </manifest>
                     </archive>
                 </configuration>
