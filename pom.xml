@@ -68,7 +68,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>ui.Main</mainClass> 
+                            <mainClass>ui.App</mainClass> 
                             </manifest>
                     </archive>
                 </configuration>
