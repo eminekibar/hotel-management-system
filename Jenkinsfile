@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    triggers {
+        pollSCM('H/1 * * * *') 
+    }
+
     tools {
         maven "M3" 
     }
@@ -48,13 +52,9 @@ pipeline {
         stage('Docker Build & Push') {
             steps {
                 script {
-                    echo 'Docker İmajı Hazırlanıyor...'
-                    sh "docker build -t ${DOCKER_IMAGE}:latest ."
-                    
-                    echo 'Docker Hub\'a Yükleniyor...'
-                    withCredentials([usernamePassword(credentialsId: DOCKER_CREDS, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                        sh "docker login -u $USER -p $PASS"
-                        sh "docker push ${DOCKER_IMAGE}:latest"
+                    echo 'Docker İmajı Hazırlanıyor ve Docker Hub\'a Yükleniyor'
+                    docker.withRegistry('', 'docker-hub-credentials') {
+                    docker.build("${DOCKER_IMAGE}:latest").push()
                     }
                 }
             }
