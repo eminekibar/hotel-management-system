@@ -9,12 +9,12 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn dependency:go-offline
 
-ARG sonarProjectKey='simple-java'
-ARG sonarLoginToken='sqp_18edf432e534ae4652cf09a17c6bbca952ae901d'
-ARG sonarHostUrl='http://192.168.1.2:9000'
+#ARG sonarProjectKey='simple-java'
+#ARG sonarLoginToken='sqp_18edf432e534ae4652cf09a17c6bbca952ae901d'
+#ARG sonarHostUrl='http://192.168.1.2:9000'
 # Copy the source code and build the JAR
 COPY src /app/src
-RUN mvn clean verify sonar:sonar -Dsonar.projectKey=${sonarProjectKey} -Dsonar.host.url=${sonarHostUrl} -Dsonar.login=${sonarLoginToken} -DskipTests
+#RUN mvn clean verify sonar:sonar -Dsonar.projectKey=${sonarProjectKey} -Dsonar.host.url=${sonarHostUrl} -Dsonar.login=${sonarLoginToken} -DskipTests
 # Testleri atlayarak paketi oluşturuyoruz (Zaten Jenkins'te test ettik)
 RUN mvn clean package -DskipTests
 
