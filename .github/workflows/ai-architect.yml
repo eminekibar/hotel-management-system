@@ -8,6 +8,9 @@ jobs:
   analyze-project:
     runs-on: self-hosted # İŞTE BU! GitHub'ın değil, senin 16 GB'lık llm-worker sunucun!
 
+    permissions:
+      contents: write
+
     steps:
       - name: 📥 Kodu İndir
         uses: actions/checkout@v3
