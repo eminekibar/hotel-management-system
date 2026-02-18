@@ -1,0 +1,47 @@
+name: Faz 1 - Yapay Zeka Proje Mimarı 🏛️
+
+# Bu robot sadece biz butona basınca manuel olarak TEK SEFERLİK çalışacak
+on:
+  workflow_dispatch: 
+
+jobs:
+  analyze-project:
+    runs-on: self-hosted # İŞTE BU! GitHub'ın değil, senin 16 GB'lık llm-worker sunucun!
+
+    steps:
+      - name: 📥 Kodu İndir
+        uses: actions/checkout@v3
+
+      - name: 🌳 Proje Haritasını Çıkar
+        run: |
+          # Projenin ağaç yapısını çıkarıyoruz (gereksiz derleme klasörlerini yoksayarak)
+          sudo apt-get update && sudo apt-get install tree -y
+          tree -I '.git|node_modules|target|bin|obj|build|.idea|.vscode' > project_tree.txt
+          echo "Proje haritası başarıyla çıkarıldı!"
+
+      - name: 🧠 Qwen 7B ile Mimari Analiz Yap
+        run: |
+          TREE_CONTENT=$(cat project_tree.txt)
+          
+          # AI'a verdiğimiz Senior seviye direktifler
+          PROMPT="Sen kıdemli bir Yazılım Mimarı (Software Architect) ve Tech Lead'sin. Aşağıda 'Hotel Management System' projemizin dosya ve klasör yapısı verilmiştir:
+          
+          \`\`\`text
+          $TREE_CONTENT
+          \`\`\`
+          
+          Senden beklenenler:
+          1. Bu klasör yapısına bakarak projenin hangi teknoloji yığını (stack) ile yazıldığını analiz et.
+          2. Klasör isimlerinden yola çıkarak içindeki modülleri (Müşteri, Oda, Rezervasyon vb.) detaylandır.
+          3. Ekibe yeni katılacak geliştiriciler için profesyonel bir 'PROJE_MİMARİSİ.md' dökümanı yaz. (Yanıtın tamamen Türkçe ve Markdown formatında olsun). Sadece dökümanı yaz, ekstra sohbet etme."
+          
+          # Kodlama uzmanı Qwen Coder'a komutu yolluyoruz
+          ollama run qwen2.5-coder:7b "$PROMPT" > PROJE_MIMARISI.md
+
+      - name: 💾 Dökümanı Git'e Kaydet
+        run: |
+          git config --global user.name "AI Architect Bot 🤖"
+          git config --global user.email "ai@hotel-management.local"
+          git add PROJE_MIMARISI.md
+          git commit -m "docs: Qwen 7B tarafından proje mimarisi dokümantasyonu oluşturuldu 🏛️"
+          git push
