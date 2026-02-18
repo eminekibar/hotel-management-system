@@ -15,7 +15,6 @@ jobs:
       - name: 🌳 Proje Haritasını Çıkar
         run: |
           # Projenin ağaç yapısını çıkarıyoruz (gereksiz derleme klasörlerini yoksayarak)
-          sudo apt-get update && sudo apt-get install tree -y
           tree -I '.git|node_modules|target|bin|obj|build|.idea|.vscode' > project_tree.txt
           echo "Proje haritası başarıyla çıkarıldı!"
 
